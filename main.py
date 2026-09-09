@@ -22,8 +22,8 @@ from telegram.ext import (
 )
 
 # ================= কনফিগারেশন =================
-MAIN_BOT_TOKEN = "YOUR_MAIN_BOT_TOKEN_HERE"  # আপনার মেইন বটের টোকেন দিন
-ADMIN_ID = 123456789                         # আপনার টেলিগ্রাম আইডি দিন
+MAIN_BOT_TOKEN = "8385333653:AAF-aL_ttBqSEFwT0KxNlrUDSWkvmIJJHRw"  # আপনার মেইন বটের টোকেন দিন
+ADMIN_ID = 6805684286                         # আপনার টেলিগ্রাম আইডি দিন
 TOKEN_FILE = "tg.txt"
 CHATS_FILE = "chats.json"
 USERS_FILE = "users.json"
