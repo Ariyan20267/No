@@ -1,472 +1,498 @@
 import os
+import io
 import json
-import threading
-import telebot
-from telebot import types
+import random
+import zipfile
+import asyncio
+import datetime
+import aiohttp
+from telegram import (
+    Update, 
+    InlineKeyboardButton, 
+    InlineKeyboardMarkup, 
+    ReplyKeyboardMarkup
+)
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    filters
+)
 
 # ================= কনফিগারেশন =================
-BOT_TOKEN = "8902663816:AAEpO8B22_LpGh2UmOm69x2OXIoa9DRVo_g"   # BotFather থেকে পাওয়া টোকেন
-ADMIN_ID = 6805684286                # আপনার টেলিগ্রাম আইডি (সংখ্যায়)
-
-bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML", threaded=True, num_threads=40)
-
+MAIN_BOT_TOKEN = "YOUR_MAIN_BOT_TOKEN_HERE"  # আপনার মেইন বটের টোকেন দিন
+ADMIN_ID = 123456789                         # আপনার টেলিগ্রাম আইডি দিন
+TOKEN_FILE = "tg.txt"
+CHATS_FILE = "chats.json"
 USERS_FILE = "users.json"
-POSTS_FILE = "posts.json"
 
-file_lock = threading.Lock()
+# টেলিগ্রামের ১০০% অফিশিয়াল ডিফল্ট ৪৫টি স্পেশাল ইমোজি (কান্না ও রাগ ছাড়া)
+SPECIAL_EMOJIS = [
+    "🔥", "❤️", "🎉", "⚡", "🤩", "👏", "🥰", "💯", "🏆", "😍",
+    "❤️‍🔥", "🍾", "🍓", "💋", "😇", "🦄", "😎", "👾", "✨", "👍",
+    "👌", "🤝", "🫡", "🆒", "💘", "🕊️", "🐳", "🤣", "😁", "🤗",
+    "😘", "👀", "🙈", "🙊", "💅", "🤪", "🗿", "🤓", "👻", "👨‍💻",
+    "✍️", "🤯", "🤔", "🍌", "🌚"
+]
+# ===============================================
 
-ADMIN_STATE = {}
-# কোন ইউজার কোন কোন চ্যানেলের বাটনে ক্লিক করেছে তা ট্র্যাকিং
-USER_CLICKED_BUTTONS = {} 
-# ভেরিফাই ক্লিক ট্র্যাকার (১ম ক্লিক vs ২য় ক্লিক)
-USER_VERIFY_ATTEMPTS = {} 
+# --- হেল্পার বক্স ডিজাইন ফাংশন ---
+def make_box(title: str, lines: list, emoji_icon: str = "✨") -> str:
+    header = f"╭───〔 {emoji_icon} {title} 〕───╮\n│"
+    content = "\n".join([f"│  {line}" for line in lines])
+    footer = "│\n╰──────────────────────────────╯"
+    return f"{header}\n{content}\n{footer}"
 
-# ================= ডাটাবেজ হ্যান্ডলার =================
-def load_data(file_name):
-    with file_lock:
-        if not os.path.exists(file_name):
-            with open(file_name, "w", encoding="utf-8") as f:
-                json.dump({}, f)
-        with open(file_name, "r", encoding="utf-8") as f:
-            try:
-                return json.load(f)
-            except Exception:
-                return {}
+# --- ফাইল ম্যানেজমেন্ট ফাংশনস ---
+def load_tokens():
+    if not os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "w") as f: pass
+        return []
+    with open(TOKEN_FILE, "r") as f:
+        return [line.strip() for line in f if line.strip()]
 
-def save_data(file_name, data):
-    with file_lock:
-        with open(file_name, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+def save_token(token):
+    tokens = load_tokens()
+    if token in tokens:
+        return False
+    with open(TOKEN_FILE, "a") as f:
+        f.write(f"{token}\n")
+    return True
 
-# প্রিমিয়াম বক্স UI
-def royal_box(title, text):
-    return (
-        f"╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n"
-        f"        🌟 <b>{title.upper()}</b> 🌟\n"
-        f"╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n"
-        f"{text}\n"
-        f"─────────────────────────────"
+def remove_token(token_to_remove):
+    tokens = load_tokens()
+    tokens = [t for t in tokens if t != token_to_remove]
+    with open(TOKEN_FILE, "w") as f:
+        for t in tokens:
+            f.write(f"{t}\n")
+
+# গ্রুপ ও চ্যানেল হিস্টোরি
+def save_chat_info(chat_id, title):
+    chats = load_chats()
+    chats[str(chat_id)] = title
+    with open(CHATS_FILE, "w", encoding="utf-8") as f:
+        json.dump(chats, f, ensure_ascii=False, indent=2)
+
+def load_chats():
+    if not os.path.exists(CHATS_FILE): return {}
+    try:
+        with open(CHATS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except: return {}
+
+# ইউজার ট্র্যাকিং (ব্রডকাস্টের জন্য)
+def save_user(user_id, username):
+    users = load_users()
+    users[str(user_id)] = username or "User"
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
+
+def load_users():
+    if not os.path.exists(USERS_FILE): return {}
+    try:
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except: return {}
+
+# জিপ ব্যাকআপ ফাইল জেনারেটর
+def create_backup_zip():
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for filename in [TOKEN_FILE, CHATS_FILE, USERS_FILE]:
+            if os.path.exists(filename):
+                zip_file.write(filename)
+    zip_buffer.seek(0)
+    return zip_buffer
+
+# বটের ইউজারনেম বের করা
+async def get_bot_info(session, token):
+    try:
+        async with session.get(f"https://api.telegram.org/bot{token}/getMe", timeout=5) as resp:
+            data = await resp.json()
+            if data.get("ok"):
+                return data["result"]["username"]
+    except:
+        return None
+    return None
+
+# রিয়েকশন ফাংশন
+async def send_reaction(session, token, chat_id, message_id, emoji):
+    url = f"https://api.telegram.org/bot{token}/setMessageReaction"
+    payload = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "reaction": [{"type": "emoji", "emoji": emoji}],
+        "is_big": False
+    }
+    try:
+        async with session.post(url, json=payload, timeout=5) as resp:
+            return await resp.json()
+    except:
+        return None
+
+# ================== হ্যান্ডলারস ==================
+
+# /start হ্যান্ডলার
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    user_id = user.id
+    tokens = load_tokens()
+
+    save_user(user_id, user.username)
+
+    welcome_box = make_box(
+        "REACTION NETWORK",
+        [
+            "👋 **হ্যালো প্রিয় ব্যবহারকারী!**",
+            "টেলিগ্রামের সেরা প্রিমিয়াম মাল্টি-রিঅ্যাকশন",
+            "অফিসিয়াল সিস্টেমে আপনাকে স্বাগতম!",
+            "",
+            f"⚡ **সক্রিয় রিঅ্যাকশন বট:** `{len(tokens)}` টি",
+            "🎨 **ইমোজি:** ১০০% টেলিগ্রাম সাপোর্টেড প্রিমিয়াম সেট",
+            "🚀 **কার্যকারিতা:** যেকোনো মেসেজে ১০০% ফাস্ট রিঅ্যাক্ট",
+            "",
+            "👇 **বটগুলোর লিস্ট পেতে নিচের বাটনে চাপুন:**"
+        ],
+        emoji_icon="🌟"
     )
 
-# ডায়নামিক কিবোর্ড জেনারেটর (যে বাটনে ক্লিক করবে সেটা সরে যাবে)
-def generate_task_keyboard(user_id, post_id, channels):
-    user_key = f"{user_id}_{post_id}"
-    clicked = USER_CLICKED_BUTTONS.get(user_key, set())
+    inline_keyboard = [
+        [InlineKeyboardButton("🤖 All Bots (বটের তালিকা দেখুন)", callback_data="show_all_bots")]
+    ]
+    inline_markup = InlineKeyboardMarkup(inline_keyboard)
 
-    keyboard = types.InlineKeyboardMarkup()
-    # শুধুমাত্র যে বাটনগুলোতে এখনো ক্লিক করেনি সেগুলো দেখাবে (বাকিগুলো গায়েব)
-    for idx, url in enumerate(channels):
-        if idx not in clicked:
-            keyboard.add(types.InlineKeyboardButton(text=f"📢 চ্যানেল {idx+1} এ জয়েন করুন", callback_data=f"click_ch:{post_id}:{idx}"))
-
-    # ভেরিফাই বাটন সবসময় নিচে থাকবে
-    keyboard.add(types.InlineKeyboardButton(text="🔄 ভেরিফাই করুন", callback_data=f"verify:{post_id}"))
-    return keyboard
-
-# ফাইল পাঠানো
-def send_user_file(chat_id, post):
-    file_type = post["file_type"]
-    file_id = post["file_id"]
-    caption = royal_box("VERIFIED SUCCESSFUL", "🎉 <b>আপনার ভেরিফিকেশন সফল হয়েছে!</b>\n\n📂 নিচে আপনার কাঙ্ক্ষিত ফাইল দেওয়া হলো:")
-
-    try:
-        if file_type == 'document':
-            bot.send_document(chat_id, file_id, caption=caption)
-        elif file_type == 'video':
-            bot.send_video(chat_id, file_id, caption=caption)
-        elif file_type == 'audio':
-            bot.send_audio(chat_id, file_id, caption=caption)
-        elif file_type == 'photo':
-            bot.send_photo(chat_id, file_id, caption=caption)
-    except Exception:
-        bot.send_message(chat_id, "❌ ফাইলটি পাঠাতে সমস্যা হয়েছে। অ্যাডমিনের সাথে যোগাযোগ করুন।")
-
-# ================= /START হ্যান্ডলার =================
-@bot.message_handler(commands=['start'])
-def start_handler(message):
-    user_id = message.from_user.id
-    chat_id = message.chat.id
-    text = message.text.strip()
-    first_name = message.from_user.first_name
-
-    # ইউজার সেভ
-    users = load_data(USERS_FILE)
-    if str(user_id) not in users:
-        users[str(user_id)] = {"name": first_name, "username": message.from_user.username}
-        save_data(USERS_FILE, users)
-
-    # অ্যাডমিন প্যানেল
-    if user_id == ADMIN_ID and text == "/start":
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.row("➕ নতুন পোস্ট তৈরি", "⚙️ পোস্ট কাস্টমাইজ")
-        markup.row("📢 নোটিশ পাঠান", "📊 মোট ইউজার")
+    if user_id == ADMIN_ID:
+        admin_keyboard = [
+            ["➕ বট যোগ করুন", "➖ বট রিমুভ করুন"],
+            ["🧹 নষ্ট বট ডিলিট", "📢 ব্রডকাস্ট মেসেজ"],
+            ["💾 ব্যাকআপ ফাইল", "📊 গ্রুপ ও চ্যানেল লিস্ট"],
+            ["⚙️ সিস্টেম স্ট্যাটাস"]
+        ]
+        reply_markup = ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True)
+        await update.message.reply_text(welcome_box, reply_markup=inline_markup, parse_mode="Markdown")
         
-        bot.send_message(
-            ADMIN_ID,
-            royal_box("ADMIN DASHBOARD", f"স্বাগতম বস <b>{first_name}</b>!\nনিচের মেনু থেকে কাজ পরিচালনা করুন:"),
-            reply_markup=markup
+        admin_box = make_box(
+            "ADMIN CONTROLLER",
+            [
+                "👑 **অ্যাডমিন কন্ট্রোল প্যানেল সক্রিয়!**",
+                "নিচের বাটনগুলো দিয়ে পুরো নেটওয়ার্ক নিয়ন্ত্রণ করুন।"
+            ],
+            emoji_icon="🛡️"
         )
-        return
-
-    # সাধারণ ভিজিটর (প্রোফাইল পিকচার ওয়েলকাম)
-    parts = text.split()
-    if len(parts) == 1:
-        welcome_text = (
-            f"👋 হ্যালো প্রিয় <b>{first_name}</b>,\n\n"
-            f"👑 আমাদের ফাইল স্টোর বটে আপনাকে স্বাগতম!\n"
-            f"⚡ এখানে সব ফাইল সুরক্ষিত ও সহজে পাবেন।\n\n"
-            f"📌 <i>ফাইল পেতে নির্দিষ্ট প্রজেক্ট লিংকে ক্লিক করে আসুন।</i>"
-        )
-        try:
-            photos = bot.get_user_profile_photos(user_id, limit=1)
-            if photos.total_count > 0:
-                file_id = photos.photos[0][-1].file_id
-                bot.send_photo(chat_id, file_id, caption=royal_box("WELCOME USER", welcome_text))
-            else:
-                bot.send_message(chat_id, royal_box("WELCOME USER", welcome_text))
-        except Exception:
-            bot.send_message(chat_id, royal_box("WELCOME USER", welcome_text))
-        return
-
-    # ইউনিক লিংকে আসা ইউজার (/start post_1)
-    post_id = parts[1]
-    posts = load_data(POSTS_FILE)
-
-    if post_id not in posts:
-        bot.send_message(chat_id, "❌ এই পোস্ট বা ফাইলটি খুঁজে পাওয়া যায়নি!")
-        return
-
-    post = posts[post_id]
-    channels = post.get("channels", [])
-
-    if not channels:
-        send_user_file(chat_id, post)
-        return
-
-    # ইউজার স্টেট ফ্রেশ করা
-    user_key = f"{user_id}_{post_id}"
-    USER_CLICKED_BUTTONS[user_key] = set()
-    USER_VERIFY_ATTEMPTS.pop(user_key, None)
-
-    keyboard = generate_task_keyboard(user_id, post_id, channels)
-
-    guide_msg = (
-        "⚠️ <b>ফাইলটি আনলক করার প্রয়োজনীয় নিয়মাবলী:</b>\n\n"
-        "১️⃣ নিচের প্রতিটি চ্যানেলের বাটনে ক্লিক করুন।\n"
-        "২️⃣ ক্লিক করার পর চ্যানেলে জয়েন করুন (চ্যানেলে চাপ দিলে বাটনটি তালিকা থেকে সরে যাবে)।\n"
-        "৩️⃣ সব বাটনে ক্লিক শেষ হলে নিচে <b>ভেরিফাই করুন</b> বাটনে চাপ দিন।"
-    )
-    bot.send_message(chat_id, royal_box("REQUIRED TASKS", guide_msg), reply_markup=keyboard)
-
-# ================= বাটন ক্লিক ও সরাসরি চ্যানেলে যাওয়া =================
-@bot.callback_query_handler(func=lambda call: call.data.startswith("click_ch:"))
-def callback_channel_click(call):
-    _, post_id, idx_str = call.data.split(":")
-    idx = int(idx_str)
-    user_id = call.from_user.id
-    chat_id = call.message.chat.id
-
-    posts = load_data(POSTS_FILE)
-    if post_id not in posts:
-        bot.answer_callback_query(call.id, "❌ পোস্টটি পাওয়া যায়নি!", show_alert=True)
-        return
-
-    post = posts[post_id]
-    channels = post.get("channels", [])
-    target_url = channels[idx]
-
-    user_key = f"{user_id}_{post_id}"
-    if user_key not in USER_CLICKED_BUTTONS:
-        USER_CLICKED_BUTTONS[user_key] = set()
-
-    # এই চ্যানেলটিতে ক্লিক করা সম্পন্ন হয়েছে হিসেবে ট্র্যাকিং
-    USER_CLICKED_BUTTONS[user_key].add(idx)
-
-    # মূল মেসেজ থেকে এই বাটনটিকে চিরতরে মুছে (সরিয়) ফেলা
-    new_keyboard = generate_task_keyboard(user_id, post_id, channels)
-    try:
-        bot.edit_message_reply_markup(chat_id, call.message.message_id, reply_markup=new_keyboard)
-    except Exception:
-        pass
-
-    bot.answer_callback_query(call.id, f"✅ চ্যানেল {idx+1} এর লিংক নিচে দেওয়া হলো!", show_alert=False)
-
-    # সরাসরি চ্যানেলে ঢুকে জয়েন হওয়ার বাটন
-    open_markup = types.InlineKeyboardMarkup()
-    open_markup.add(types.InlineKeyboardButton(text=f"🚀 চ্যানেল {idx+1} এ প্রবেশ করুন ↗️", url=target_url))
-    bot.send_message(
-        chat_id,
-        f"👉 <b>চ্যানেল {idx+1} এ জয়েন করতে নিচের বাটনে চাপ দিন:</b>",
-        reply_markup=open_markup
-    )
-
-# ================= ১০০% সিকিউর ভেরিফাই বাটন =================
-@bot.callback_query_handler(func=lambda call: call.data.startswith("verify:"))
-def callback_verify(call):
-    post_id = call.data.split("verify:")[1]
-    user_id = call.from_user.id
-    chat_id = call.message.chat.id
-
-    posts = load_data(POSTS_FILE)
-    if post_id not in posts:
-        bot.answer_callback_query(call.id, "❌ পোস্টটি ডাটাবেজে নেই!", show_alert=True)
-        return
-
-    post = posts[post_id]
-    channels = post.get("channels", [])
-    user_key = f"{user_id}_{post_id}"
-    clicked = USER_CLICKED_BUTTONS.get(user_key, set())
-
-    # শর্ত ১: কোনো বাটন কি এখনো ক্লিক করা বাকি আছে?
-    unclicked = [i for i in range(len(channels)) if i not in clicked]
-
-    if unclicked:
-        # ইউজার যে বাটনে এখনো ক্লিক করেনি সেটির কথা উল্লেখ করে আটকে দেবে
-        next_channel = unclicked[0] + 1
-        bot.answer_callback_query(
-            call.id,
-            f"❌ আপনি এখনো চ্যানেল {next_channel}-এ ক্লিক করেননি!\n\nদয়া করে বাকি থাকা চ্যানেল {next_channel} বাটনে ক্লিক করে জয়েন হন।",
-            show_alert=True
-        )
-        return
-
-    # শর্ত ২: সবগুলো বাটনে ক্লিক শেষ হলে ২-ক্লিক ভেরিফিকেশন ফ্লো
-    attempts = USER_VERIFY_ATTEMPTS.get(user_key, 0)
-
-    if attempts == 0:
-        USER_VERIFY_ATTEMPTS[user_key] = 1
-        bot.answer_callback_query(
-            call.id,
-            "❌ আপনি এখনো চ্যানেলে জয়েন করেননি!\n\nদয়া করে চ্যানেলে জয়েন নিশ্চিত করে আরেকবার 'ভেরিফাই করুন' বাটনে চাপুন।",
-            show_alert=True
-        )
+        await update.message.reply_text(admin_box, reply_markup=reply_markup, parse_mode="Markdown")
     else:
-        # ২য় বার চাপার সাথে সাথে ফাইল আনলক!
-        USER_VERIFY_ATTEMPTS.pop(user_key, None)
-        USER_CLICKED_BUTTONS.pop(user_key, None)
+        await update.message.reply_text(welcome_box, reply_markup=inline_markup, parse_mode="Markdown")
 
-        bot.answer_callback_query(call.id, "✅ ভেরিফিকেশন সফল হয়েছে!", show_alert=False)
-        try:
-            bot.delete_message(chat_id, call.message.message_id)
-        except Exception:
-            pass
-        send_user_file(chat_id, post)
+# All Bots বাটন হ্যান্ডলার
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
-# ================= অ্যাডমিন মেনু =================
-@bot.message_handler(func=lambda msg: msg.from_user.id == ADMIN_ID and msg.text in ["➕ নতুন পোস্ট তৈরি", "⚙️ পোস্ট কাস্টমাইজ", "📢 নোটিশ পাঠান", "📊 মোট ইউজার"])
-def admin_menu(message):
-    text = message.text
-
-    if text == "➕ নতুন পোস্ট তৈরি":
-        ADMIN_STATE[ADMIN_ID] = {"step": "WAIT_FILE"}
-        bot.send_message(ADMIN_ID, royal_box("STEP 1: SEND FILE", "📂 <b>যে ফাইলটি দিতে চান সেটি পাঠান:</b>\n(APK, Video, Audio, Zip ইত্যাদি)"))
-
-    elif text == "⚙️ পোস্ট কাস্টমাইজ":
-        posts = load_data(POSTS_FILE)
-        if not posts:
-            bot.send_message(ADMIN_ID, "❌ বর্তমানে কাস্টমাইজ করার মতো কোনো পোস্ট নেই।")
+    if query.data == "show_all_bots":
+        tokens = load_tokens()
+        if not tokens:
+            box = make_box("সতর্কতা", ["❌ সিস্টেমে বর্তমানে কোনো স্ল্যাভ বট নেই!"], emoji_icon="⚠️")
+            await query.message.reply_text(box, parse_mode="Markdown")
             return
+
+        loading_box = make_box("লোড হচ্ছে", ["🔄 বটের তালিকা ও লিঙ্ক তৈরি হচ্ছে...", "অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন..."], emoji_icon="⏳")
+        wait_msg = await query.message.reply_text(loading_box, parse_mode="Markdown")
         
-        keyboard = types.InlineKeyboardMarkup()
-        for p_id in posts.keys():
-            keyboard.add(types.InlineKeyboardButton(f"📝 {p_id} কাস্টমাইজ করুন", callback_data=f"manage:{p_id}"))
+        buttons = []
+        async with aiohttp.ClientSession() as session:
+            for idx, token in enumerate(tokens, 1):
+                username = await get_bot_info(session, token)
+                if username:
+                    add_link = f"https://t.me/{username}?startgroup=botstart"
+                    buttons.append([InlineKeyboardButton(f"🤖 Bot #{idx}: @{username} [Add to Group]", url=add_link)])
         
-        bot.send_message(ADMIN_ID, royal_box("POST CUSTOMIZER", "যে পোস্টটি এডিট বা কাস্টমাইজ করতে চান সেটিতে চাপুন:"), reply_markup=keyboard)
+        if buttons:
+            reply_markup = InlineKeyboardMarkup(buttons)
+            ready_box = make_box(
+                "BOT LIST & ADD LINKS",
+                [
+                    "📋 **সকল রিঅ্যাকশন বটের তালিকা:**",
+                    "নিচের যেকোনো বটে ক্লিক করে সরাসরি আপনার",
+                    "গ্রুপ বা চ্যানেলে যুক্ত করে অ্যাডমিন বানান।"
+                ],
+                emoji_icon="🤖"
+            )
+            await wait_msg.edit_text(ready_box, reply_markup=reply_markup, parse_mode="Markdown")
+        else:
+            err_box = make_box("ত্রুটি", ["❌ কোনো সক্রিয় বটের সন্ধান পাওয়া যায়নি!"], emoji_icon="🚫")
+            await wait_msg.edit_text(err_box, parse_mode="Markdown")
 
-    elif text == "📢 নোটিশ পাঠান":
-        ADMIN_STATE[ADMIN_ID] = {"step": "WAIT_BROADCAST"}
-        bot.send_message(ADMIN_ID, royal_box("BROADCAST", "📝 <b>সব ইউজারের জন্য নোটিশ মেসেজটি লিখে পাঠান:</b>"))
-
-    elif text == "📊 মোট ইউজার":
-        users = load_data(USERS_FILE)
-        bot.send_message(ADMIN_ID, royal_box("STATISTICS", f"📈 <b>বটের মোট ইউজার:</b> <code>{len(users)}</code> জন।"))
-
-# ================= পোস্ট কাস্টমাইজেশন মেনু =================
-@bot.callback_query_handler(func=lambda call: call.data.startswith("manage:"))
-def manage_post_options(call):
-    p_id = call.data.split("manage:")[1]
-    posts = load_data(POSTS_FILE)
-
-    if p_id not in posts:
-        bot.answer_callback_query(call.id, "পোস্ট পাওয়া যায়নি!", show_alert=True)
+# অ্যাডমিনের কিবোর্ড ও মেসেজ হ্যান্ডলার
+async def admin_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
         return
 
-    post = posts[p_id]
-    info = (
-        f"📌 <b>পোস্ট আইডি:</b> <code>{p_id}</code>\n"
-        f"📁 <b>ফাইলের ধরন:</b> {post.get('file_type', 'N/A')}\n"
-        f"🔗 <b>চ্যানেল সংখ্যা:</b> {len(post.get('channels', []))} টি\n\n"
-        "নিচের অপশন থেকে যা পরিবর্তন করতে চান নির্বাচন করুন:"
-    )
+    text = update.message.text.strip()
+    action = context.user_data.get("action")
 
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.row(
-        types.InlineKeyboardButton("🔄 ফাইল পরিবর্তন", callback_data=f"chfile:{p_id}"),
-        types.InlineKeyboardButton("🔗 লিংক পরিবর্তন", callback_data=f"chlink:{p_id}")
-    )
-    keyboard.add(types.InlineKeyboardButton("🗑️ পোস্ট ডিলিট করুন", callback_data=f"del:{p_id}"))
-    keyboard.add(types.InlineKeyboardButton("🔙 ফিরে যান", callback_data="back_manage"))
-
-    bot.edit_message_text(royal_box("CUSTOMIZE POST", info), ADMIN_ID, call.message.message_id, reply_markup=keyboard)
-
-# কাস্টমাইজ অ্যাকশন
-@bot.callback_query_handler(func=lambda call: call.data.startswith(("chfile:", "chlink:", "del:", "back_manage")))
-def handle_customizer_actions(call):
-    data = call.data
-
-    if data == "back_manage":
-        posts = load_data(POSTS_FILE)
-        keyboard = types.InlineKeyboardMarkup()
-        for p_id in posts.keys():
-            keyboard.add(types.InlineKeyboardButton(f"📝 {p_id} কাস্টমাইজ করুন", callback_data=f"manage:{p_id}"))
-        bot.edit_message_text(royal_box("POST CUSTOMIZER", "যেকোনো পোস্ট নির্বাচন করুন:"), ADMIN_ID, call.message.message_id, reply_markup=keyboard)
+    if text == "➕ বট যোগ করুন":
+        context.user_data["action"] = "waiting_for_add"
+        box = make_box("বট যোগকরণ", ["📝 যে বটটি যুক্ত করতে চান,", "তার **Bot Token** টি এখানে পাঠান:"], emoji_icon="➕")
+        await update.message.reply_text(box, parse_mode="Markdown")
         return
 
-    action, p_id = data.split(":")
-    
-    if action == "chfile":
-        ADMIN_STATE[ADMIN_ID] = {"step": "EDIT_FILE", "post_id": p_id}
-        bot.send_message(ADMIN_ID, royal_box("CHANGE FILE", f"📂 <code>{p_id}</code> এর জন্য <b>নতুন ফাইলটি</b> পাঠান:"))
-
-    elif action == "chlink":
-        ADMIN_STATE[ADMIN_ID] = {"step": "EDIT_LINKS", "post_id": p_id}
-        bot.send_message(ADMIN_ID, royal_box("CHANGE LINKS", f"🔗 <code>{p_id}</code> এর জন্য <b>নতুন চ্যানেল লিংকগুলো</b> দিন (বা `skip` লিখুন):"))
-
-    elif action == "del":
-        posts = load_data(POSTS_FILE)
-        if p_id in posts:
-            del posts[p_id]
-            save_data(POSTS_FILE, posts)
-            bot.answer_callback_query(call.id, "✅ পোস্টটি সফলভাবে ডিলিট করা হয়েছে!", show_alert=True)
-            bot.delete_message(ADMIN_ID, call.message.message_id)
-
-# ================= অ্যাডমিন ফাইল হ্যান্ডলার =================
-@bot.message_handler(content_types=['document', 'video', 'audio', 'photo'], func=lambda msg: msg.from_user.id == ADMIN_ID)
-def admin_file_handler(message):
-    step = ADMIN_STATE.get(ADMIN_ID, {}).get("step")
-
-    if message.document:
-        f_type, f_id = "document", message.document.file_id
-    elif message.video:
-        f_type, f_id = "video", message.video.file_id
-    elif message.audio:
-        f_type, f_id = "audio", message.audio.file_id
-    elif message.photo:
-        f_type, f_id = "photo", message.photo[-1].file_id
-    else:
+    elif text == "➖ বট রিমুভ করুন":
+        context.user_data["action"] = "waiting_for_del"
+        box = make_box("বট অপসারণ", ["🗑️ যে বটটি ডাটাবেজ থেকে মুছতে চান,", "তার **Bot Token** টি এখানে পাঠান:"], emoji_icon="➖")
+        await update.message.reply_text(box, parse_mode="Markdown")
         return
 
-    # নতুন পোস্টের ফাইল গ্রহণ
-    if step == "WAIT_FILE":
-        ADMIN_STATE[ADMIN_ID] = {
-            "step": "WAIT_CHANNELS",
-            "file_type": f_type,
-            "file_id": f_id
-        }
-        guide = (
-            "✅ <b>ফাইল গ্রহণ করা হয়েছে!</b>\n\n"
-            "🔗 এবার যে চ্যানেলগুলোর লিংক দিতে চান, সেগুলো পেস্ট করুন।\n"
-            "<i>(১টি, ২টি বা যত ইচ্ছা লিংক দিন)</i>\n\n"
-            "👉 কোনো চ্যানেল না চাইলে লিখুন: <code>skip</code>"
+    elif text == "🧹 নষ্ট বট ডিলিট":
+        tokens = load_tokens()
+        wait_box = make_box("স্ক্যানিং শুরু", ["🔍 সকল বট ভেরিফাই করা হচ্ছে...", "নষ্ট/অচল বট মুছে ফেলা হচ্ছে..."], emoji_icon="⏳")
+        msg = await update.message.reply_text(wait_box, parse_mode="Markdown")
+        
+        alive_tokens = []
+        dead_count = 0
+
+        async with aiohttp.ClientSession() as session:
+            for token in tokens:
+                username = await get_bot_info(session, token)
+                if username:
+                    alive_tokens.append(token)
+                else:
+                    dead_count += 1
+
+        with open(TOKEN_FILE, "w") as f:
+            for t in alive_tokens:
+                f.write(f"{t}\n")
+
+        clean_box = make_box(
+            "ক্লিনআপ সম্পন্ন",
+            [
+                f"🗑️ ডিলিট করা নষ্ট বট: `{dead_count}` টি",
+                f"🟢 বর্তমানে সম্পূর্ণ সচল বট: `{len(alive_tokens)}` টি",
+                "✅ ডাটাবেজ এখন সম্পূর্ণ ফ্রেশ ও এররমুক্ত!"
+            ],
+            emoji_icon="🧹"
         )
-        bot.send_message(ADMIN_ID, royal_box("STEP 2: ADD LINKS", guide))
+        await msg.edit_text(clean_box, parse_mode="Markdown")
+        return
 
-    # ফাইল পরিবর্তন (Customize)
-    elif step == "EDIT_FILE":
-        p_id = ADMIN_STATE[ADMIN_ID]["post_id"]
-        posts = load_data(POSTS_FILE)
-        if p_id in posts:
-            posts[p_id]["file_type"] = f_type
-            posts[p_id]["file_id"] = f_id
-            save_data(POSTS_FILE, posts)
-            bot.send_message(ADMIN_ID, royal_box("FILE UPDATED", f"✅ <b>{p_id}</b> এর ফাইল সফলভাবে পরিবর্তন করা হয়েছে!"))
-        ADMIN_STATE.pop(ADMIN_ID, None)
-
-# ================= অ্যাডমিন টেক্সট হ্যান্ডলার =================
-@bot.message_handler(func=lambda msg: msg.from_user.id == ADMIN_ID and ADMIN_ID in ADMIN_STATE)
-def admin_text_handler(message):
-    state = ADMIN_STATE[ADMIN_ID].get("step")
-    text = message.text.strip()
-
-    # নতুন পোস্টের লিংক গ্রহণ
-    if state == "WAIT_CHANNELS":
-        channels = []
-        if text.lower() != "skip":
-            raw = text.split()
-            for l in raw:
-                l = l.strip()
-                if l.startswith("http://") or l.startswith("https://") or l.startswith("t.me/"):
-                    if not l.startswith("http"):
-                        l = f"https://{l}"
-                    channels.append(l)
-
-        posts = load_data(POSTS_FILE)
-        count = 1
-        while f"post_{count}" in posts:
-            count += 1
-        post_id = f"post_{count}"
-
-        posts[post_id] = {
-            "file_type": ADMIN_STATE[ADMIN_ID]["file_type"],
-            "file_id": ADMIN_STATE[ADMIN_ID]["file_id"],
-            "channels": channels
-        }
-        save_data(POSTS_FILE, posts)
-
-        bot_user = bot.get_me().username
-        link = f"https://t.me/{bot_user}?start={post_id}"
-        ADMIN_STATE.pop(ADMIN_ID, None)
-
-        success_msg = (
-            f"🎉 <b>আপনার পোস্ট সফলভাবে তৈরি হয়েছে!</b>\n\n"
-            f"🔗 <b>পাবলিক শেয়ারিং লিংক:</b>\n<code>{link}</code>\n\n"
-            f"📢 মোট যুক্ত চ্যানেল: <b>{len(channels)}</b> টি।"
+    elif text == "💾 ব্যাকআপ ফাইল":
+        wait_box = make_box("ব্যাকআপ প্রস্তুত হচ্ছে", ["📦 সম্পূর্ণ সিস্টেমের ডাটা জিপ ফাইলে রূপান্তর হচ্ছে..."], emoji_icon="⏳")
+        msg = await update.message.reply_text(wait_box, parse_mode="Markdown")
+        
+        zip_data = create_backup_zip()
+        today = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+        
+        await update.message.reply_document(
+            document=zip_data,
+            filename=f"Reaction_Bot_Backup_{today}.zip",
+            caption=make_box("সিস্টেম ব্যাকআপ", ["✅ আপনার সিস্টেমের সম্পূর্ণ ব্যাকআপ প্রস্তুত!", "📁 অন্তর্ভুক্ত: tg.txt, chats.json, users.json", "🛡️ এটি দিয়ে যেকোনো সার্ভারে হুবহু রিস্টোর করতে পারবেন।"], emoji_icon="💾"),
+            parse_mode="Markdown"
         )
-        bot.send_message(ADMIN_ID, royal_box("POST CREATED", success_msg))
+        await msg.delete()
+        return
 
-    # লিংক পরিবর্তন (Customize)
-    elif state == "EDIT_LINKS":
-        p_id = ADMIN_STATE[ADMIN_ID]["post_id"]
-        channels = []
-        if text.lower() != "skip":
-            raw = text.split()
-            for l in raw:
-                l = l.strip()
-                if l.startswith("http://") or l.startswith("https://") or l.startswith("t.me/"):
-                    if not l.startswith("http"):
-                        l = f"https://{l}"
-                    channels.append(l)
+    elif text == "📢 ব্রডকাস্ট মেসেজ":
+        context.user_data["action"] = "waiting_for_broadcast"
+        box = make_box(
+            "ব্রডকাস্ট মোড",
+            [
+                "📢 আপনি যে মেসেজটি সবার কাছে পাঠাতে চান,",
+                "তা লিখে পাঠান (ঘোষণা/নোটিশ)।",
+                "",
+                "⚠️ এটি সকল ইনবক্স এবং গ্রুপ/চ্যানেলে যাবে।"
+            ],
+            emoji_icon="📢"
+        )
+        await update.message.reply_text(box, parse_mode="Markdown")
+        return
 
-        posts = load_data(POSTS_FILE)
-        if p_id in posts:
-            posts[p_id]["channels"] = channels
-            save_data(POSTS_FILE, posts)
-            bot.send_message(ADMIN_ID, royal_box("LINKS UPDATED", f"✅ <b>{p_id}</b> এর চ্যানেল লিংক পরিবর্তন করা হয়েছে!\n📢 নতুন চ্যানেল সংখ্যা: <b>{len(channels)}</b> টি।"))
-        ADMIN_STATE.pop(ADMIN_ID, None)
+    elif text == "📊 গ্রুপ ও চ্যানেল লিস্ট":
+        chats = load_chats()
+        if not chats:
+            box = make_box("ডাটা পাওয়া যায়নি", ["ℹ️ এখনও কোনো গ্রুপ/চ্যানেল থেকে নোটিশ আসেনি।"], emoji_icon="📂")
+            await update.message.reply_text(box, parse_mode="Markdown")
+            return
 
-    # ব্রডকাস্ট নোটিশ
-    elif state == "WAIT_BROADCAST":
-        ADMIN_STATE.pop(ADMIN_ID, None)
-        users = load_data(USERS_FILE)
-        broadcast_text = message.text
+        chat_lines = ["📋 **সংযুক্ত গ্রুপ ও চ্যানেলসমূহ:**", ""]
+        for idx, (cid, title) in enumerate(chats.items(), 1):
+            chat_lines.append(f"**{idx}.** {title} `[ID: {cid}]`")
+        chat_lines.append("")
+        chat_lines.append(f"📢 মোট কানেক্টেড চ্যাট: **{len(chats)}** টি")
 
-        def run_broadcast():
-            sent = 0
-            for uid in list(users.keys()):
-                try:
-                    bot.send_message(
-                        uid,
-                        royal_box("OFFICIAL NOTICE", f"{broadcast_text}\n\n<i>💬 যেকোনো প্রয়োজনে সরাসরি মেসেজ দিন।</i>")
-                    )
-                    sent += 1
-                    time.sleep(0.04)
-                except Exception:
-                    pass
-            bot.send_message(ADMIN_ID, royal_box("COMPLETED", f"✅ মোট <b>{sent}</b> জন ইউজারের কাছে নোটিশ পৌঁছেছে!"))
+        box = make_box("CHATS HISTORY", chat_lines, emoji_icon="📊")
+        await update.message.reply_text(box, parse_mode="Markdown")
+        return
 
-        threading.Thread(target=run_broadcast).start()
-        bot.send_message(ADMIN_ID, "🚀 ব্যাকগ্রাউন্ডে নোটিশ পাঠানো শুরু হয়েছে...")
+    elif text == "⚙️ সিস্টেম স্ট্যাটাস":
+        tokens = load_tokens()
+        chats = load_chats()
+        users = load_users()
+        box = make_box(
+            "SYSTEM STATUS",
+            [
+                f"🤖 স্ল্যাভ বট টোকেন: `{len(tokens)}` টি",
+                f"👥 মোট বট ইউজার: `{len(users)}` জন",
+                f"📢 কানেক্টেড গ্রুপ/চ্যানেল: `{len(chats)}` টি",
+                f"🎨 অফিসিয়াল ইমোজি সেট: `{len(SPECIAL_EMOJIS)}` টি",
+                "⏰ দৈনিক অটো-ব্যাকআপ: সকাল ১০:০০ টা (সক্রিয়)",
+                "🛡️ সার্ভার হেলথ: ১০০% পারফেক্ট!"
+            ],
+            emoji_icon="⚙️"
+        )
+        await update.message.reply_text(box, parse_mode="Markdown")
+        return
 
-# বট চালু
-print("👑 [ULTIMATE 100% UNBYPASSABLE FILE STORE BOT] Running smoothly on Termux!")
-bot.infinity_polling(timeout=15, long_polling_timeout=5)
+    # ব্রডকাস্ট মেসেজ এক্সিকিউশন
+    if action == "waiting_for_broadcast":
+        users = load_users()
+        chats = load_chats()
+        
+        wait_box = make_box("ব্রডকাস্ট চলছে", ["📡 সবার কাছে মেসেজ পাঠিয়ে দেওয়া হচ্ছে...", "অনুগ্রহ করে ব্যাকগ্রাউন্ড প্রসেস শেষ হওয়া পর্যন্ত অপেক্ষা করুন..."], emoji_icon="🚀")
+        stat_msg = await update.message.reply_text(wait_box, parse_mode="Markdown")
+        
+        success_users = 0
+        success_chats = 0
+
+        broadcast_content = make_box("📢 অফিশিয়াল নোটিশ", [text], emoji_icon="🔔")
+
+        for uid in users.keys():
+            try:
+                await context.bot.send_message(chat_id=int(uid), text=broadcast_content, parse_mode="Markdown")
+                success_users += 1
+                await asyncio.sleep(0.04)
+            except: pass
+
+        for cid in chats.keys():
+            try:
+                await context.bot.send_message(chat_id=int(cid), text=broadcast_content, parse_mode="Markdown")
+                success_chats += 1
+                await asyncio.sleep(0.04)
+            except: pass
+
+        report_box = make_box(
+            "ব্রডকাস্ট রিপোর্ট",
+            [
+                "✅ **সফলভাবে মেসেজ পাঠানো সম্পন্ন হয়েছে!**",
+                "",
+                f"👤 ব্যবহারকারীদের ইনবক্সে: `{success_users}` জন",
+                f"📢 গ্রুপ ও চ্যানেলসমূহে: `{success_chats}` টি",
+                f"📊 মোট সফল ডেলিভারি: `{success_users + success_chats}` টি"
+            ],
+            emoji_icon="📊"
+        )
+        await stat_msg.edit_text(report_box, parse_mode="Markdown")
+        context.user_data["action"] = None
+        return
+
+    # টোকেন ইনপুট লজিক
+    if action == "waiting_for_add":
+        tokens = load_tokens()
+        if text in tokens:
+            dup_box = make_box("ডুপ্লিকেট সতর্কতা", ["⚠️ এই টোকেনটি ইতোমধ্যে ফাইলে রয়েছে!", "একই টোকেন বারবার দেওয়ার প্রয়োজন নেই।"], emoji_icon="⚠️")
+            await update.message.reply_text(dup_box, parse_mode="Markdown")
+            return
+
+        async with aiohttp.ClientSession() as session:
+            username = await get_bot_info(session, text)
+            if username:
+                save_token(text)
+                succ_box = make_box("বট যোগ সফল", [f"🤖 বট: @{username}", "📁 tg.txt ফাইলে সেভ হয়েছে!", "⚡ এটি এখন রিঅ্যাকশন দিতে প্রস্তুত।"], emoji_icon="✅")
+                await update.message.reply_text(succ_box, parse_mode="Markdown")
+            else:
+                err_box = make_box("ভুল টোকেন", ["❌ টোকেনটি অবৈধ বা নষ্ট!", "টেলিগ্রাম এই টোকেনটিকে গ্রহণ করেনি।"], emoji_icon="🚫")
+                await update.message.reply_text(err_box, parse_mode="Markdown")
+        context.user_data["action"] = None
+
+    elif action == "waiting_for_del":
+        tokens = load_tokens()
+        if text in tokens:
+            remove_token(text)
+            del_box = make_box("সফল অপসারণ", ["🗑️ টোকেনটি সফলভাবে ডিলিট করা হয়েছে!"], emoji_icon="✅")
+            await update.message.reply_text(del_box, parse_mode="Markdown")
+        else:
+            not_found = make_box("পাওয়া যায়নি", ["❌ এই টোকেনটি ডাটাবেজ ফাইলেই নেই!"], emoji_icon="⚠️")
+            await update.message.reply_text(not_found, parse_mode="Markdown")
+        context.user_data["action"] = None
+
+# ================= নোটিশে স্বয়ংক্রিয় রিঅ্যাকশন ইঞ্জিন =================
+async def reaction_engine(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.effective_message
+    chat = update.effective_chat
+    if not msg or not chat:
+        return
+
+    save_chat_info(chat.id, chat.title or "Private Group")
+
+    tokens = load_tokens()
+    if not tokens:
+        return
+
+    # ৪৫টি অফিশিয়াল ইমোজি র‍্যান্ডমাইজ হবে
+    shuffled_emojis = random.sample(SPECIAL_EMOJIS, len(SPECIAL_EMOJIS))
+
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        for idx, token in enumerate(tokens):
+            emoji = shuffled_emojis[idx % len(shuffled_emojis)]
+            tasks.append(send_reaction(session, token, chat.id, msg.message_id, emoji))
+            await asyncio.sleep(0.04)
+
+        await asyncio.gather(*tasks)
+
+# ================= প্রতিদিন সকাল ১০টায় অটো ব্যাকআপ টাস্ক =================
+async def daily_auto_backup_worker(app):
+    sent_today = False
+    while True:
+        # বাংলাদেশ সময় (UTC+6)
+        now_bd = datetime.datetime.utcnow() + datetime.timedelta(hours=6)
+        
+        if now_bd.hour == 10 and now_bd.minute == 0 and not sent_today:
+            try:
+                zip_data = create_backup_zip()
+                caption = make_box(
+                    "দৈনিক অটো-ব্যাকআপ (সকাল ১০:০০)",
+                    [
+                        f"📅 তারিখ: {now_bd.strftime('%Y-%m-%d')}",
+                        "📁 অন্তর্ভুক্ত ফাইল: tg.txt, chats.json, users.json",
+                        "🤖 সিস্টেমের সকল ডাটা সফলভাবে ব্যাকআপ করা হয়েছে।"
+                    ],
+                    emoji_icon="⏰"
+                )
+                await app.bot.send_document(
+                    chat_id=ADMIN_ID,
+                    document=zip_data,
+                    filename=f"Auto_Backup_{now_bd.strftime('%Y-%m-%d')}.zip",
+                    caption=caption,
+                    parse_mode="Markdown"
+                )
+                sent_today = True
+            except Exception as e:
+                print(f"Auto Backup Error: {e}")
+        
+        if now_bd.hour == 10 and now_bd.minute > 1:
+            sent_today = False
+            
+        await asyncio.sleep(30)
+
+# ================= মেইন ফাংশন =================
+async def post_init(app):
+    asyncio.create_task(daily_auto_backup_worker(app))
+
+def main():
+    print("🚀 ১০০% টেলিগ্রাম সাপোর্টেড মাল্টি-রিঅ্যাকশন সিস্টেম চালু হচ্ছে...")
+    app = ApplicationBuilder().token(MAIN_BOT_TOKEN).post_init(post_init).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button_callback))
+    app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, admin_message_handler))
+
+    # গ্রুপ ও চ্যানেলে অটো-রিঅ্যাকশন
+    app.add_handler(MessageHandler(filters.ChatType.GROUPS | filters.ChatType.CHANNEL, reaction_engine))
+
+    print("✅ সিস্টেম ১০০% রেডি! কোনো এরর ছাড়া সকল অফিশিয়াল ইমোজি রানিং।")
+    app.run_polling(drop_pending_updates=True)
+
+if __name__ == "__main__":
+    main()
