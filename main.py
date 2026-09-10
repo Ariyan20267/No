@@ -1,90 +1,147 @@
-import asyncio
+import sys
+import subprocess
+import os
+
+# ==================== ০. স্বয়ংক্রিয় ডিপেন্ডেন্সি ইনস্টলার ====================
+REQUIRED_PACKAGES = {
+    "telebot": "pyTelegramBotAPI",
+    "requests": "requests",
+    "urllib3": "urllib3"
+}
+
+def install_dependencies():
+    for module_name, pip_name in REQUIRED_PACKAGES.items():
+        try:
+            __import__(module_name)
+        except ImportError:
+            print(f"📦 ইন্সটল করা হচ্ছে: {pip_name}...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name, "--quiet"])
+
+install_dependencies()
+
+# ==================== মডিউল ইমপোর্ট ====================
 import re
+import time
+import html
 import random
-from datetime import datetime, timedelta
-from telegram import Update, ChatPermissions, ReactionTypeEmoji
-from telegram.constants import ParseMode, ChatMemberStatus
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes, CommandHandler
-from telegram.error import TelegramError
+import threading
+import requests
+import urllib3
+import telebot
+from telebot.types import (
+    ChatPermissions,
+    ReactionTypeEmoji
+)
 
-# ==================== কনফিগারেশন ====================
-BOT_TOKEN = "8768727708:AAF62zTgGvjX5TrYQJsR8X1zGZ3yMwuZrMY"  # আপনার বটের টোকেন এখানে দিন
-BOT_USERNAME = "Boo0ooo_bot"   # @ বাদে আপনার বটের ইউজারনেম
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# মেম্বারদের ওয়ার্নিং ট্র্যাক করার ডিকশনারি
-# Structure: {chat_id: {user_id: count}}
+# ==================== ১. কনফিগারেশন ====================
+BOT_TOKEN = "8768727708:AAF62zTgGvjX5TrYQJsR8X1zGZ3yMwuZrMY"  # আপনার বটের টোকেন
+BOT_USERNAME = "Boo0ooo_bot"   # @ ছাড়া আপনার বটের ইউজারনেম
+KEY_FILE = "gemini_key.txt"
+WORKING_MODEL = "models/gemini-flash-lite-latest"
+
+BOT_NAME = "𝐙𝐀𝐑𝐀"
+ADMIN_NAME = "আরিয়ান"
+SUPER_ADMIN_IDS = [6805684286]  # প্রধান এডমিন আইডি
+
+CODE_DIR = "generated_projects"
+os.makedirs(CODE_DIR, exist_ok=True)
+
+# ইউজার ওয়ার্নিং ট্র্যাকার
 user_warnings = {}
 
-# সাধারণ মেসেজে রিঅ্যাকশন দেওয়ার জন্য ইমোজি লিস্ট
-REACTION_EMOJIS = ["❤️", "🔥", "👍", "👏", "🎉", "🤩", "⚡", "💯", "👌"]
+# ফাস্ট নেটওয়ার্ক সেশন
+HTTP_SESSION = requests.Session()
 
-# ==================== ১০০+ গালি ও নিষিদ্ধ শব্দ ====================
-BANNED_WORDS = [
-    # বাংলা ও বাংলিশ গালি
+REACTIONS = ["❤️", "🔥", "✨", "🥰", "⚡", "💅", "💎", "🌸", "👑"]
+
+# ==================== ২. ১২০+ গালি ও স্ল্যাং ডিকশনারি ====================
+BAD_WORDS = [
+    # বাংলা গালি
+    "মাদারচোদ", "চুদা", "চোদ", "খানকি", "খানকির পোলা", "খানকির ছেলে", "মাগীর পোলা", 
+    "মাগী", "শুয়োরের বাচ্চা", "শুওর", "কুত্তার বাচ্চা", "কুত্তা", "বেশ্যা", "বাল", 
+    "বোকাচোদা", "গাঞ্জাখোর", "হারামি", "ভোদাই", "ভোদাইমোদা", "লুচ্চা", "লুচ্চামি", 
+    "চুদমারানি", "রাঁড়ি", "পোদ", "পোদমারানি", "লেবড়া", "নটি", "নটির পোলা", "খচ্চর",
+    "চুদিস", "চুদে", "চোদাবো", "চুদবানি", "গুদের", "গুদ", "নেড়ে", "মাগীর",
+
+    # বাংলিশ গালি
     "maderchod", "mc", "bc", "bhodaimoda", "chudmarani", "khankir pola", "khanki", 
-    "magir pola", "shala", "shali", "gandu", "bainchod", "harami", "bal", "chuda", 
-    "chudani", "bogachoda", "kutta", "kuttar bacha", "podmarani", "chod", "behaiya",
-    "bessha", "randi", "randir pola", "madarchod", "suor", "suorer bacha", "banchod",
-    "fokirni", "khankir chele", "bokachoda", "lund", "bur", "bura", "chudis", "chudbo",
-    "চুদা", "চোদ", "মাদারচোদ", "খানকি", "খানকির পোলা", "মাগীর পোলা", "শুয়োরের বাচ্চা", 
-    "কুত্তার বাচ্চা", "বেশ্যা", "বাল", "বোকাচোদা", "গাঞ্জাখোর", "হারামি", "ভোদাই", 
-    "ভোদাইমোদা", "লুচ্চা", "লুচ্চামি", "চুদমারানি", "রাঁড়ি", "পোদ", "লেবড়া",
+    "magir pola", "magi", "shala", "shali", "gandu", "bainchod", "harami", "bal", 
+    "chuda", "choda", "chudani", "bogachoda", "kutta", "kuttar bacha", "podmarani", 
+    "chod", "behaiya", "bessha", "randi", "randir pola", "madarchod", "suor", 
+    "suorer bacha", "banchod", "fokirni", "khankir chele", "bokachoda", "lund", 
+    "bur", "bura", "chudis", "chudbo", "gud", "putki", "balsal", "chodao",
 
     # ইংরেজি গালি
     "fuck", "fucker", "fucking", "bitch", "bastard", "asshole", "dick", "pussy", 
     "cunt", "motherfucker", "slut", "whore", "nigger", "cock", "bullshit", "prick", 
-    "retard", "fag", "faggot", "scumbag", "blowjob", "dumbass",
-
-    # স্প্যাম ও ইনবক্স সম্পর্কিত নিষিদ্ধ কথা (Bangla & English)
-    "inbox asho", "inbox koro", "inbox a aso", "inbox aisho", "inbox korun", 
-    "dm me", "dm koro", "come inbox", "inbox er moddhe asho", "massage dao",
-    "personal a asho", "like sell", "follower sell", "id sell", "page sell",
-    "sub sell", "watch time sell", "coin sell", "dollar sell", "tk lagbe",
-    "free taka", "free recharge", "taka income korun", "taka income koro",
-    "লাইক সেল", "আইডি সেল", "ইনবক্সে আসো", "ইনবক্স কর", "ডিএম করো", "ফলোয়ার সেল"
+    "retard", "fag", "faggot", "scumbag", "blowjob", "dumbass", "nigga", "hoe"
 ]
 
-# লিংক খোঁজার জন্য রেগুলার এক্সপ্রেশন
-URL_PATTERN = re.compile(
-    r'(https?://[^\s]+)|(www\.[^\s]+)|(t\.me/[^\s]+)|(telegram\.me/[^\s]+)', 
+# ==================== ৩. ইনবক্স ও স্প্যাম ফিল্টার ====================
+SPAM_PATTERNS = [
+    r'\b(i[nb]box|ইনবক্স|ইনবক্সে)\b',
+    r'\b(dm\s*me|dm\s*koro|dm\s*korun|check\s*dm|pm\s*me)\b',
+    r'(inbox\s*asho|inbox\s*a\s*asho|inbox\s*koro|ib\s*asho|ib\s*te\s*asho)',
+    r'(পার্সোনালে\s*আসো|পার্সোনাল\s*মেসেজ|ইনবক্সে\s*আসেন|মেসেজ\s*দেন|ইনবক্স\s*কর)',
+    r'(massage\s*dao|message\s*dao|msg\s*dao|come\s*inbox)',
+    r'(like\s*sell|লাইক\s*সেল|follower\s*sell|ফলোয়ার\s*সেল)',
+    r'(id\s*sell|আইডি\s*সেল|page\s*sell|পেজ\s*সেল|group\s*sell)',
+    r'(coin\s*sell|dollar\s*sell|ডলার\s*সেল|ডলার\s*কিনবো|কয়েন\s*সেল)',
+    r'(টাকা\s*ইনকাম|free\s*recharge|free\s*taka|ইনকাম\s*করুন|টাকা\s*লাগবে)'
+]
+
+URL_REGEX = re.compile(
+    r'(https?://\S+|www\.\S+|t\.me/\S+|telegram\.me/\S+|tg://\S+|bit\.ly/\S+)', 
     re.IGNORECASE
 )
 
-# ==================== হেল্পার ফাংশনসমূহ ====================
+# ==================== ৪. লোডার ও পারমিশন ====================
 
-async def is_admin(chat, user_id: int) -> bool:
-    """ইউজার অ্যাডমিন বা গ্রুপের মালিক কি না চেক করে"""
+def load_gemini_key():
+    if os.path.exists(KEY_FILE):
+        with open(KEY_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    return ""
+
+GEMINI_API_KEY = load_gemini_key()
+bot = telebot.TeleBot(BOT_TOKEN)
+BOT_INFO = bot.get_me()
+
+def is_chat_admin(chat_id, user_id):
+    if user_id in SUPER_ADMIN_IDS:
+        return True
     try:
-        member = await chat.get_member(user_id)
-        return member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
+        member = bot.get_chat_member(chat_id, user_id)
+        return member.status in ['creator', 'administrator']
     except Exception:
         return False
 
+# ==================== ৫. খাঁটি বাংলা স্টাইলিশ বক্স ====================
+
 def get_warning_box(user_mention: str, reason: str, warn_count: int) -> str:
-    """১ম সতর্কবার্তার ডিজাইন বক্স"""
     return (
         "╔═══════════════════════════════╗\n"
-        "║      ⚠️ **গ্রুপ সতর্কবার্তা (WARNING)** ⚠️\n"
+        "║      ⚠️ <b>গ্রুপ সতর্কবার্তা</b> ⚠️\n"
         "╠═══════════════════════════════╣\n"
-        f"║ 👤 **ব্যবহারকারী:** {user_mention}\n"
-        f"║ 🚫 **কারণ:** {reason}\n"
-        f"║ ⚠️ **ওয়ার্নিং সংখ্যা:** [{warn_count}/2]\n"
+        f"║ 👤 <b>ব্যবহারকারী:</b> {user_mention}\n"
+        f"║ 🚫 <b>কারণ:</b> {reason}\n"
+        f"║ ⚠️ <b>সতর্কতা সংখ্যা:</b> [{warn_count}/2]\n"
         "╠═══════════════════════════════╣\n"
-        "║ 📢 **সতর্কতা:** গ্রুপের নিয়ম মেনে চলুন।\n"
-        "║ ২য় বার ভুল করলে **১ ঘণ্টার জন্য মিউট**\n"
-        "║ করা হবে!\n"
+        "║ 📢 <i>গ্রুপের শৃঙ্খলা বজায় রাখুন।</i>\n"
+        "║ আর একবার নিয়ম ভাঙলে <b>১ ঘণ্টার জন্য মিউট</b>!\n"
         "╚═══════════════════════════════╝"
     )
 
 def get_mute_box(user_mention: str, reason: str) -> str:
-    """মিউট করার সময় ডিজাইন বক্স"""
     return (
         "╔═══════════════════════════════╗\n"
-        "║        🔇 **শাস্তিমূলক ব্যবস্থা (MUTED)** 🔇\n"
+        "║        🔇 <b>মিউট নোটিশ (MUTED)</b> 🔇\n"
         "╠═══════════════════════════════╣\n"
-        f"║ 👤 **ব্যবহারকারী:** {user_mention}\n"
-        f"║ 🚫 **কারণ:** {reason} (পুনরাবৃত্তি)\n"
-        "║ ⏳ **শাস্তি:** ১ ঘণ্টার জন্য মিউট!\n"
+        f"║ 👤 <b>ব্যবহারকারী:</b> {user_mention}\n"
+        f"║ 🚫 <b>কারণ:</b> {reason} (পুনরাবৃত্তি)\n"
+        "║ ⏳ <b>শাস্তি:</b> ১ ঘণ্টার জন্য মিউট!\n"
         "╠═══════════════════════════════╣\n"
         "║ 💡 ১ ঘণ্টা পর আপনি স্বয়ংক্রিয়ভাবে কথা\n"
         "║ বলার সুযোগ পাবেন। গ্রুপ শান্ত রাখুন।\n"
@@ -92,167 +149,334 @@ def get_mute_box(user_mention: str, reason: str) -> str:
     )
 
 def get_unmute_box(user_mention: str) -> str:
-    """আনমিউট নোটিশের ডিজাইন বক্স"""
     return (
         "╔═══════════════════════════════╗\n"
-        "║        🔊 **আনমিউট নোটিফিকেশন** 🔊\n"
+        "║        🔊 <b>আনমিউট নোটিফিকেশন</b> 🔊\n"
         "╠═══════════════════════════════╣\n"
-        f"║ 👤 **ব্যবহারকারী:** {user_mention}\n"
-        "║ ✅ **অবস্থা:** আপনাকে আনমিউট করা হলো।\n"
+        f"║ 👤 <b>ব্যবহারকারী:</b> {user_mention}\n"
+        "║ ✅ <b>অবস্থা:</b> আপনার শাস্তির মেয়াদ শেষ!\n"
         "╠═══════════════════════════════╣\n"
-        "║ দয়া করে গ্রুপের নিয়ম মেনে চলুন এবং সুন্দর\n"
-        "║ পরিবেশ বজায় রাখুন। শুভ আড্ডা!\n"
+        "║ 🌸 স্বাগতম আবার! দয়া করে আর গ্রুপের কোনো\n"
+        "║ নিয়ম ভঙ্গ করবেন না সোনা। 🥰\n"
         "╚═══════════════════════════════╝"
     )
 
-async def auto_unmute_task(context: ContextTypes.DEFAULT_TYPE, chat_id: int, user_id: int, user_mention: str):
-    """১ ঘণ্টা অপেক্ষা করে ইউজারকে আনমিউট করার টাস্ক"""
-    await asyncio.sleep(3600)  # ৩৬০০ সেকেন্ড = ১ ঘণ্টা
+def create_stylish_ai_box(header, body, footer=""):
+    box = f"╭── ✧ <b>{header}</b> ✧ ──╮\n│\n"
+    for line in body.strip().split("\n"):
+        box += f"│ {line}\n"
+    if footer:
+        box += f"│\n├── <i>{footer}</i>\n"
+    box += "╰──────────────────────────╯"
+    return box
+
+# ==================== ৬. ১ ঘণ্টা পর অটো আনমিউট ব্যাকগ্রাউন্ড ====================
+
+def auto_unmute_worker(chat_id, user_id, user_mention):
+    time.sleep(3600)  # ৩৬০০ সেকেন্ড = ১ ঘণ্টা
     try:
-        # সকল মেসেজ পারমিশন ফিরিয়ে দেওয়া
-        permissions = ChatPermissions(
-            can_send_messages=True,
-            can_send_media_messages=True,
-            can_send_polls=True,
-            can_send_other_messages=True,
-            can_add_web_page_previews=True
+        bot.restrict_chat_member(
+            chat_id, user_id,
+            permissions=ChatPermissions(
+                can_send_messages=True, can_send_media_messages=True,
+                can_send_other_messages=True, can_add_web_page_previews=True,
+                can_send_polls=True
+            )
         )
-        await context.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=permissions)
-        
-        # ওয়ার্নিং কাউন্ট রিসেট করা
         if chat_id in user_warnings and user_id in user_warnings[chat_id]:
             user_warnings[chat_id][user_id] = 0
 
-        # সুন্দর আনমিউট বক্স সেন্ড করা
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=get_unmute_box(user_mention),
-            parse_mode=ParseMode.MARKDOWN
-        )
+        bot.send_message(chat_id, get_unmute_box(user_mention), parse_mode="HTML")
     except Exception as e:
-        print(f"Error while unmuting: {e}")
+        print(f"Auto Unmute Error: {e}")
 
-# ==================== মূল ফিল্টারিং হ্যান্ডলার ====================
+# ==================== ৭. আল্ট্রা-ফাস্ট জিমিনি AI ইঞ্জিন (খাঁটি বাংলা) ====================
 
-async def handle_group_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = update.effective_message
-    chat = update.effective_chat
-    user = update.effective_user
+def ask_gemini_ai(user_prompt, user_name, file_type=None):
+    global GEMINI_API_KEY
+    if not GEMINI_API_KEY:
+        return "Gemini API Key সেট করা নেই! এডমিন ভাইয়াকে বলো /setkey দিয়ে চালু করতে।"
 
-    # প্রাইভেট চ্যাটে কাজ করবে না, শুধু গ্রুপে কাজ করবে
-    if not message or not chat or chat.type in ["private", "channel"]:
-        return
+    url = f"https://generativelanguage.googleapis.com/v1beta/{WORKING_MODEL}:generateContent?key={GEMINI_API_KEY}"
+    headers = {'Content-Type': 'application/json'}
 
-    # সিস্টেম মেসেজ বা বট নিজে মেসেজ পাঠালে ইগনোর করবে
-    if not user or user.is_bot:
-        return
+    if file_type:
+        prompt_instruction = (
+            f"তুমি একজন সেরা ও অভিজ্ঞ ফুল-স্ট্যাক সফটওয়্যার ডেভেলপার যার নাম '{BOT_NAME}'। "
+            f"ইউজার '{user_name}' একটি সম্পূর্ণ {file_type.upper()} কোড প্রজেক্ট চেয়েছে।\n"
+            f"নির্দেশনা:\n"
+            f"১. কোনো অসম্পূর্ণ বা ফাঁকা কোড দেবে না; সম্পূর্ণ আধুনিক, ত্রুটিহীন ও পূর্ণাঙ্গ কোড লিখবে।\n"
+            f"২. উত্তরের একদম প্রথম লাইনে লিখবে: [FILENAME: project_name.{file_type}]\n"
+            f"৩. পুরো কোডটি অবশ্যই ```{file_type} এবং ``` ব্লকের ভেতরে রাখবে।"
+        )
+        max_tokens = 3200
+    else:
+        prompt_instruction = (
+            f"তোমার নাম '{BOT_NAME}'। তুমি {ADMIN_NAME} (আরিয়ান) ভাইয়ের গ্রুপের অত্যন্ত মিষ্টি, বুদ্ধিমতী ও আদুরে সহকারী। "
+            f"🚨 ভাষার নিয়ম:\n"
+            f"১. তোমার প্রধান এবং একমাত্র ভাষা হলো খাঁটি, স্পষ্ট এবং সুন্দর বাংলা। পুরো বাক্য কখনোই ইংরেজিতে বলবে না।\n"
+            f"২. কথা আকর্ষণীয় করতে খুব বেশি হলে মাঝেমধ্যে ১-২টি ছোট শব্দ (যেমন: 'Sure! ✨', 'Done 🚀') ব্যবহার করতে পারো, কিন্তু মূল উত্তর সবসময় সুন্দর বাংলায় হবে।\n"
+            f"৩. সাধারণ ছোট প্রশ্নের উত্তর ১ থেকে সর্বোচ্চ ২ লাইনে মিষ্টি করে দেবে।\n"
+            f"৪. কোনো বড় শিক্ষণীয় বা তথ্যভিত্তিক বিষয় জানতে চাইলে পয়েন্ট আকারে সর্বোচ্চ ১০ লাইনের মধ্যে উত্তর শেষ করবে (কখনোই ১০ লাইনের বেশি হবে না)।"
+        )
+        max_tokens = 250
 
-    # ইউজার অ্যাডমিন কি না যাচাই
-    admin_status = await is_admin(chat, user.id)
-    if admin_status:
-        return  # অ্যাডমিনদের কোনো রেস্ট্রিকশন নেই
+    payload = {
+        "contents": [{"parts": [{"text": f"{prompt_instruction}\n\nইউজার {user_name} বলেছে: \"{user_prompt}\"\n\nউত্তর:"}]}],
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": max_tokens}
+    }
 
-    text = message.text or message.caption or ""
-    lower_text = text.lower()
-    user_mention = f"[{user.first_name}](tg://user?id={user.id})"
-    chat_id = chat.id
-    user_id = user.id
+    try:
+        res = HTTP_SESSION.post(url, json=payload, headers=headers, timeout=20, verify=False)
+        data = res.json()
+        if res.status_code == 200 and 'candidates' in data and data['candidates']:
+            return data['candidates'][0]['content']['parts'][0]['text'].strip()
+    except Exception as e:
+        print(f"Gemini Fast Engine Error: {e}")
 
-    violation_reason = None
+    return "কানেকশনে সামান্য সমস্যা হচ্ছে সোনা! একটু পর আবার বলো তো।"
 
-    # ১. ফরওয়ার্ড মেসেজ চেক
-    if message.forward_date or message.forward_from or message.forward_from_chat:
-        violation_reason = "ফরওয়ার্ড মেসেজ পাঠানো সম্পূর্ণ নিষিদ্ধ"
+# ==================== ৮. ফাস্ট লোডিং ও কোড জেনারেটর ====================
 
-    # ২. লিংক প্রোটেকশন চেক
-    elif URL_PATTERN.search(text):
-        violation_reason = "গ্রুপে যেকোনো ধরনের লিংক শেয়ার করা নিষিদ্ধ"
+def format_loading_view(user_name: str, percent: int, bar: str, lights: str) -> str:
+    return (
+        f"💖 আপনার জন্য কোডিং আমি রেডি করতেছি, একটু অপেক্ষা করুন <b>{user_name}</b> বাবু... 🥰✨\n\n"
+        f"⏳ <b>অগ্রগতি:</b> <code>[{bar}] {percent}%</code> {lights}"
+    )
 
-    # ৩. গালি ও স্প্যাম টেক্সট ফিল্টার
-    elif any(bad_word in lower_text for bad_word in BANNED_WORDS):
-        violation_reason = "অশালীন ভাষা / স্প্যামিং / ইনবক্স ডাকার নিষেধাজ্ঞা ভঙ্গ"
+def handle_code_generation(chat_id, user_name, reply_to_id, prompt_text, file_type):
+    initial_text = format_loading_view(user_name, 15, "██░░░░░░░░", "🔴 🔵")
+    loading_msg = bot.send_message(chat_id, initial_text, parse_mode="HTML")
 
-    # ৪. বড় মেসেজ (৪০০ অক্ষরের বেশি) প্রোটেকশন
-    elif len(text) > 400:
-        violation_reason = "গ্রুপে অতিরিক্ত বড় টেক্সট/স্প্যামিং করা নিষিদ্ধ"
+    ai_state = {"code": "", "completed": False}
 
-    # ৫. অন্য কোনো বট বা প্রোফাইল মেনশন ফিল্টার
-    elif message.entities:
-        for entity in message.entities:
-            if entity.type == "mention":
-                mention_text = text[entity.offset:entity.offset + entity.length].replace("@", "")
-                # বটের নিজস্ব নাম ব্যতীত অন্য কোনো মেনশন ব্লক করা
-                if mention_text.lower() != BOT_USERNAME.lower():
-                    violation_reason = "অন্যান্য বট বা প্রোফাইল মেনশন করা নিষিদ্ধ"
-                    break
+    def fetch_ai_code():
+        ai_state["code"] = ask_gemini_ai(prompt_text, user_name, file_type=file_type)
+        ai_state["completed"] = True
 
-    # ==================== শাস্তি কার্যকর করার অংশ ====================
-    if violation_reason:
+    threading.Thread(target=fetch_ai_code, daemon=True).start()
+
+    def animation_process():
+        fast_steps = [
+            (35, "████░░░░░░", "🔵 🟣 🟢"),
+            (70, "███████░░░", "🟣 🟢 🟡"),
+            (92, "█████████░", "🟢 🟡 🔴")
+        ]
+
+        for percent, bar, lights in fast_steps:
+            if ai_state["completed"]:
+                break
+            time.sleep(0.35)
+            try:
+                bot.edit_message_text(
+                    format_loading_view(user_name, percent, bar, lights),
+                    chat_id=chat_id,
+                    message_id=loading_msg.message_id,
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass
+
+        wait_cnt = 0
+        while not ai_state["completed"] and wait_cnt < 35:
+            time.sleep(0.2)
+            wait_cnt += 1
+
         try:
-            # সাথে সাথে অবৈধ মেসেজ ডিলিট
-            await message.delete()
-        except TelegramError:
+            bot.edit_message_text(
+                format_loading_view(user_name, 100, "██████████", "✨ 💎 👑"),
+                chat_id=chat_id,
+                message_id=loading_msg.message_id,
+                parse_mode="HTML"
+            )
+        except Exception:
             pass
 
-        # ইউজার ওয়ার্নিং ট্র্যাক করা
-        if chat_id not in user_warnings:
-            user_warnings[chat_id] = {}
-        user_warnings[chat_id][user_id] = user_warnings[chat_id].get(user_id, 0) + 1
+        raw_code = ai_state["code"]
 
-        warn_count = user_warnings[chat_id][user_id]
+        fname_match = re.search(r'\[FILENAME:\s*([a-zA-Z0-9_\-\.]+)\.(py|html)\]', raw_code, re.IGNORECASE)
+        filename = f"{fname_match.group(1)}.{fname_match.group(2).lower()}" if fname_match else f"project_{int(time.time())}.{file_type}"
 
-        if warn_count == 1:
-            # ১ম বার ওয়ার্নিং বক্স
-            warn_msg = await context.bot.send_message(
-                chat_id=chat_id,
-                text=get_warning_box(user_mention, violation_reason, 1),
-                parse_mode=ParseMode.MARKDOWN
-            )
-            # ২০ সেকেন্ড পর ওয়ার্নিং মেসেজ ডিলিট করতে চাইলে আনকমেন্ট করতে পারেন
-            # await asyncio.sleep(20); await warn_msg.delete()
+        code_match = re.search(rf'```(?:{file_type})?\s*([\s\S]*?)```', raw_code, re.IGNORECASE)
+        pure_code = code_match.group(1).strip() if code_match else raw_code.strip()
 
-        elif warn_count >= 2:
-            # ২য় বার মিউট (১ ঘণ্টার জন্য)
-            try:
-                mute_permissions = ChatPermissions(can_send_messages=False)
-                await context.bot.restrict_chat_member(
-                    chat_id=chat_id,
-                    user_id=user_id,
-                    permissions=mute_permissions,
-                    until_date=datetime.now() + timedelta(hours=1)
-                )
+        # নন-এম্পটি সেফটি
+        if len(pure_code) < 10:
+            if file_type == "html":
+                pure_code = "<!DOCTYPE html>\n<html lang='bn'>\n<head>\n<meta charset='UTF-8'>\n<title>ওয়েবসাইট</title>\n<style>body{font-family:sans-serif;background:#0f172a;color:#fff;text-align:center;padding:50px;}</style>\n</head>\n<body>\n<h1>✨ আপনার ওয়েবসাইট প্রজেক্ট সফলভাবে প্রস্তুত!</h1>\n</body>\n</html>"
+            else:
+                pure_code = f"# -*- coding: utf-8 -*-\n# তৈরি করেছে {BOT_NAME}\n\ndef main():\n    print('✨ আপনার পাইথন প্রোজেক্ট সফলভাবে প্রস্তুত!')\n\nif __name__ == '__main__':\n    main()\n"
 
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=get_mute_box(user_mention, violation_reason),
-                    parse_mode=ParseMode.MARKDOWN
-                )
+        file_path = os.path.join(CODE_DIR, filename)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(pure_code)
 
-                # ১ ঘণ্টার পর স্বয়ংক্রিয়ভাবে আনমিউট করার টাস্ক চালু করা
-                asyncio.create_task(auto_unmute_task(context, chat_id, user_id, user_mention))
+        caption = (
+            f"╭── 💎 <b>কোড ফাইল প্রস্তুত সম্পন্ন</b> 💎\n"
+            f"│ 👤 <b>অনুরোধকারী:</b> {user_name}\n"
+            f"│ 📁 <b>ফাইলের নাম:</b> <code>{filename}</code>\n"
+            f"│ ⚡ <b>ধরন:</b> {file_type.upper()} (১০০% নির্ভুল কোড)\n"
+            f"│ 🌸 <i>{BOT_NAME} এর পক্ষ থেকে উপহার 🥰</i>\n"
+            f"╰──────────────────────────╯"
+        )
 
-            except TelegramError as e:
-                print(f"Error restricting user: {e}")
+        try:
+            with open(file_path, "rb") as doc:
+                bot.send_document(chat_id, document=doc, caption=caption, reply_to_message_id=reply_to_id, parse_mode="HTML")
+            bot.delete_message(chat_id, loading_msg.message_id)
+        except Exception as err:
+            bot.edit_message_text(f"❌ এরর: {err}", chat_id=chat_id, message_id=loading_msg.message_id)
+        finally:
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
+    threading.Thread(target=animation_process, daemon=True).start()
+
+# ==================== ৯. কমান্ড হ্যান্ডলার ====================
+
+@bot.message_handler(commands=['setkey'])
+def set_key(message):
+    global GEMINI_API_KEY
+    if not (message.from_user.id in SUPER_ADMIN_IDS):
         return
 
-    # ==================== সাধারণ মেসেজে অটো রিঅ্যাকশন ====================
+    key = message.text.replace('/setkey', '').strip()
+    if not key:
+        bot.reply_to(message, "এডমিন ভাইয়া, এভাবে লিখুন: `/setkey YOUR_KEY`")
+        return
+
+    with open(KEY_FILE, "w", encoding="utf-8") as f:
+        f.write(key)
+    GEMINI_API_KEY = key
+    bot.reply_to(message, "✅ <i>Gemini API Key সফলভাবে যুক্ত হয়েছে!</i>", parse_mode="HTML")
+
+# ==================== ১০. সেন্ট্রাল মেসেজ কন্ট্রোলার ====================
+
+@bot.message_handler(func=lambda msg: True, content_types=['text', 'forward_date'])
+def central_handler(message):
     try:
-        chosen_emoji = random.choice(REACTION_EMOJIS)
-        await message.set_reaction(reaction=[ReactionTypeEmoji(emoji=chosen_emoji)])
-    except Exception:
-        pass  # কোনো গ্রুপে রিঅ্যাকশন পারমিশন অফ থাকলে এরর এড়িয়ে যাবে
+        chat_id = message.chat.id
+        chat_type = message.chat.type
+        user = message.from_user
+        if not user or user.is_bot:
+            return
+
+        user_id = user.id
+        user_name = html.escape(user.first_name or "বন্ধু")
+        user_mention = f'<a href="tg://user?id={user_id}">{user_name}</a>'
+        text = (message.text or "").strip()
+        lower_text = text.lower()
+        user_is_admin = is_chat_admin(chat_id, user_id)
+
+        # ১. অটো রিঅ্যাকশন
+        try:
+            bot.set_message_reaction(chat_id, message.message_id, [ReactionTypeEmoji(random.choice(REACTIONS))], is_big=False)
+        except Exception:
+            pass
+
+        # ২. গ্রুপ সিকিউরিটি ফিল্টার (এডমিন বাদে সবার জন্য)
+        if chat_type in ['group', 'supergroup'] and not user_is_admin:
+            violation_reason = None
+
+            if message.forward_date or message.forward_from or message.forward_from_chat:
+                violation_reason = "গ্রুপে কোনো কিছু ফরোয়ার্ড করা সম্পূর্ণ নিষেধ!"
+
+            elif URL_REGEX.search(text):
+                violation_reason = "গ্রুপে যেকোনো ধরনের লিংক শেয়ার করা সম্পূর্ণ নিষেধ!"
+
+            elif any(re.search(r'(?i)\b' + re.escape(w) + r'\b', lower_text) for w in BAD_WORDS):
+                violation_reason = "অশালীন ভাষা ও গালিগালাজ ব্যবহার করা হয়েছে!"
+
+            elif any(re.search(pat, lower_text, re.IGNORECASE) for pat in SPAM_PATTERNS):
+                violation_reason = "ইনবক্সে ডাকা, আইডি/লাইক বিক্রি বা স্প্যামিং নিষেধ!"
+
+            elif len(text) > 450:
+                violation_reason = "অতিরিক্ত বড় মেসেজ দিয়ে গ্রুপ জ্যাম করা নিষেধ!"
+
+            elif message.entities:
+                for ent in message.entities:
+                    if ent.type == "mention":
+                        m_name = text[ent.offset:ent.offset + ent.length].replace("@", "")
+                        if m_name.lower() != BOT_USERNAME.lower() and m_name.lower() != BOT_INFO.username.lower():
+                            violation_reason = "অন্যান্য বট বা অন্য কারো আইডি মেনশন করা নিষেধ!"
+                            break
+
+            # 🛑 নিয়ম ভাঙলে শাস্তি
+            if violation_reason:
+                try:
+                    bot.delete_message(chat_id, message.message_id)
+                except Exception:
+                    pass
+
+                if chat_id not in user_warnings:
+                    user_warnings[chat_id] = {}
+                user_warnings[chat_id][user_id] = user_warnings[chat_id].get(user_id, 0) + 1
+                count = user_warnings[chat_id][user_id]
+
+                if count == 1:
+                    bot.send_message(chat_id, get_warning_box(user_mention, violation_reason, 1), parse_mode="HTML")
+                elif count >= 2:
+                    try:
+                        bot.restrict_chat_member(
+                            chat_id, 
+                            user_id, 
+                            until_date=int(time.time()) + 3600, 
+                            permissions=ChatPermissions(can_send_messages=False)
+                        )
+                        bot.send_message(chat_id, get_mute_box(user_mention, violation_reason), parse_mode="HTML")
+                        threading.Thread(target=auto_unmute_worker, args=(chat_id, user_id, user_mention), daemon=True).start()
+                    except Exception as err:
+                        print(f"Mute Error: {err}")
+                return
+
+        # ==================== ১১. এআই ট্রিগার লজিক ====================
+        
+        triggers = ["জারা", "যারা", "zara", "বট", "bot", "আরিয়ান", "আরিয়ান", "ariyan", "এডমিন", "admin", "help", "সাহায্য", "হেল্প"]
+        is_called = any(re.search(r'(?i)\b' + re.escape(t) + r'\b', lower_text) for t in triggers)
+        is_reply_to_bot = (message.reply_to_message and message.reply_to_message.from_user.id == BOT_INFO.id)
+        is_private = (chat_type == 'private')
+
+        if is_private or is_reply_to_bot or is_called:
+            
+            # ক) ওয়েবসাইট / HTML কোডিং
+            html_keywords = ["html", "ওয়েবসাইট", "website", "web page", "ল্যান্ডিং পেজ", "ওয়েব পেজ", "frontend", "css"]
+            if any(k in lower_text for k in html_keywords):
+                handle_code_generation(chat_id, user_name, message.message_id, text, file_type="html")
+                return
+
+            # খ) পাইথন কোডিং
+            py_keywords = ["কোড", "code", "বট বানাও", "স্ক্রিপ্ট", "script", "পাইথন", "python", "প্রোগ্রাম"]
+            if any(k in lower_text for k in py_keywords):
+                handle_code_generation(chat_id, user_name, message.message_id, text, file_type="py")
+                return
+
+            # গ) নাম ধরে ডাকলে কিউট বাংলা রেসপন্স
+            clean_word = re.sub(r'[^\w\s]', '', lower_text).strip()
+            if clean_word in ["জারা", "যারা", "zara", "বট", "bot", "এডমিন", "admin", "আরিয়ান", "ariyan"]:
+                resp = (
+                    f"হ্যাঁ <b>{user_name}</b> সোনা! ✨\n"
+                    f"আমি আপনাকে কীভাবে সাহায্য করতে পারি বলুন? 🥰\n"
+                    f"<i>(আপনার কী কোড বা তথ্য লাগবে বলুন, আমি তৈরি আছি!)</i>"
+                )
+                bot.reply_to(message, create_stylish_ai_box(f"{BOT_NAME} আপনার পাশে 💖", resp), parse_mode="HTML")
+                return
+
+            # ঘ) সাধারণ চ্যাট
+            bot.send_chat_action(chat_id, 'typing')
+            ai_reply = ask_gemini_ai(text, user_name, file_type=None)
+            
+            # 👑 ফুটার: শুধুমাত্র এডমিন হলে 'পরিচালনায় আরিয়ান', অন্যথায় ইউজারের নাম
+            if user_is_admin or user_id in SUPER_ADMIN_IDS:
+                custom_footer = f"পরিচালনায়: {ADMIN_NAME} ভাই 👑"
+            else:
+                custom_footer = f"সেবায়: {user_name} 🌸"
+
+            box_resp = create_stylish_ai_box(f"{BOT_NAME} এর উত্তর ✨", html.escape(ai_reply), custom_footer)
+            bot.reply_to(message, box_resp, parse_mode="HTML")
+
+    except Exception as e:
+        print(f"Error in Central Handler: {e}")
 
 # ==================== মেইন রানার ====================
-def main():
-    print("বট সফলভাবে চালু হয়েছে...")
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    # মেসেজ ফিল্টার হ্যান্ডলার যুক্ত করা
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_group_messages))
-
-    # বট পোলিং শুরু
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+print(f"👑 {BOT_NAME} (খাঁটি বাংলা এআই ও আল্ট্রা-ফাস্ট সিকিউরিটি) প্রস্তুত!")
+bot.infinity_polling(skip_pending=True)
