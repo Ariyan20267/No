@@ -14,7 +14,7 @@ def install_dependencies():
         try:
             __import__(module_name)
         except ImportError:
-            print(f"📦 ইন্সটল করা হচ্ছে: {pip_name}...")
+            print(f"📦 প্যাকেজ ইনস্টল করা হচ্ছে: {pip_name}...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name, "--quiet"])
 
 install_dependencies()
@@ -37,8 +37,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ==================== ১. কনফিগারেশন ====================
 BOT_TOKEN = "8768727708:AAF62zTgGvjX5TrYQJsR8X1zGZ3yMwuZrMY"  # আপনার বটের টোকেন
-BOT_USERNAME = "Boo0ooo_bot"   # @ ছাড়া আপনার বটের ইউজারনেম
+BOT_USERNAME = "Boo0ooo_bot"   # @ ছাড়া বটের ইউজারনেম দিন
 KEY_FILE = "gemini_key.txt"
+
+# 🚀 আপনার কাঙ্ক্ষিত আল্ট্রা-ফাস্ট অরিজিনাল মডেল
 WORKING_MODEL = "models/gemini-flash-lite-latest"
 
 BOT_NAME = "𝐙𝐀𝐑𝐀"
@@ -50,9 +52,6 @@ os.makedirs(CODE_DIR, exist_ok=True)
 
 # ইউজার ওয়ার্নিং ট্র্যাকার
 user_warnings = {}
-
-# ফাস্ট নেটওয়ার্ক সেশন
-HTTP_SESSION = requests.Session()
 
 REACTIONS = ["❤️", "🔥", "✨", "🥰", "⚡", "💅", "💎", "🌸", "👑"]
 
@@ -118,7 +117,7 @@ def is_chat_admin(chat_id, user_id):
     except Exception:
         return False
 
-# ==================== ৫. খাঁটি বাংলা স্টাইলিশ বক্স ====================
+# ==================== ৫. স্টাইলিশ ডিজাইন বক্স ====================
 
 def get_warning_box(user_mention: str, reason: str, warn_count: int) -> str:
     return (
@@ -127,10 +126,10 @@ def get_warning_box(user_mention: str, reason: str, warn_count: int) -> str:
         "╠═══════════════════════════════╣\n"
         f"║ 👤 <b>ব্যবহারকারী:</b> {user_mention}\n"
         f"║ 🚫 <b>কারণ:</b> {reason}\n"
-        f"║ ⚠️ <b>সতর্কতা সংখ্যা:</b> [{warn_count}/2]\n"
+        f"║ ⚠️ <b>সতর্কতা:</b> [{warn_count}/2]\n"
         "╠═══════════════════════════════╣\n"
-        "║ 📢 <i>গ্রুপের শৃঙ্খলা বজায় রাখুন।</i>\n"
-        "║ আর একবার নিয়ম ভাঙলে <b>১ ঘণ্টার জন্য মিউট</b>!\n"
+        "║ 📢 <i>গ্রুপের নিয়ম মেনে চলুন।</i>\n"
+        "║ আর একবার ভুল করলে <b>১ ঘণ্টার জন্য মিউট</b>!\n"
         "╚═══════════════════════════════╝"
     )
 
@@ -170,10 +169,10 @@ def create_stylish_ai_box(header, body, footer=""):
     box += "╰──────────────────────────╯"
     return box
 
-# ==================== ৬. ১ ঘণ্টা পর অটো আনমিউট ব্যাকগ্রাউন্ড ====================
+# ==================== ৬. অটো আনমিউট ব্যাকগ্রাউন্ড ====================
 
 def auto_unmute_worker(chat_id, user_id, user_mention):
-    time.sleep(3600)  # ৩৬০০ সেকেন্ড = ১ ঘণ্টা
+    time.sleep(3600)
     try:
         bot.restrict_chat_member(
             chat_id, user_id,
@@ -190,53 +189,51 @@ def auto_unmute_worker(chat_id, user_id, user_mention):
     except Exception as e:
         print(f"Auto Unmute Error: {e}")
 
-# ==================== ৭. আল্ট্রা-ফাস্ট জিমিনি AI ইঞ্জিন (খাঁটি বাংলা) ====================
+# ==================== ৭. আল্ট্রা-ফাস্ট জিমিনি এআই ইঞ্জিন ====================
 
 def ask_gemini_ai(user_prompt, user_name, file_type=None):
     global GEMINI_API_KEY
     if not GEMINI_API_KEY:
-        return "Gemini API Key সেট করা নেই! এডমিন ভাইয়াকে বলো /setkey দিয়ে চালু করতে।"
+        return "আমার API Key সেট করা নেই সোনা! এডমিন বাবুকে বলো /setkey দিয়ে চাবিটা দিতে! 🥺"
 
+    # অরিজিনাল ফাস্ট মডেল ইউআরএল
     url = f"https://generativelanguage.googleapis.com/v1beta/{WORKING_MODEL}:generateContent?key={GEMINI_API_KEY}"
     headers = {'Content-Type': 'application/json'}
 
     if file_type:
         prompt_instruction = (
-            f"তুমি একজন সেরা ও অভিজ্ঞ ফুল-স্ট্যাক সফটওয়্যার ডেভেলপার যার নাম '{BOT_NAME}'। "
-            f"ইউজার '{user_name}' একটি সম্পূর্ণ {file_type.upper()} কোড প্রজেক্ট চেয়েছে।\n"
-            f"নির্দেশনা:\n"
-            f"১. কোনো অসম্পূর্ণ বা ফাঁকা কোড দেবে না; সম্পূর্ণ আধুনিক, ত্রুটিহীন ও পূর্ণাঙ্গ কোড লিখবে।\n"
-            f"২. উত্তরের একদম প্রথম লাইনে লিখবে: [FILENAME: project_name.{file_type}]\n"
-            f"৩. পুরো কোডটি অবশ্যই ```{file_type} এবং ``` ব্লকের ভেতরে রাখবে।"
+            f"তুমি একজন সেরা সফটওয়্যার ডেভেলপার যার নাম '{BOT_NAME}'। "
+            f"ইউজার '{user_name}' একটি সম্পূর্ণ {file_type.upper()} কোড প্রজেক্ট চেয়েছে। "
+            f"তুমি সম্পূর্ণ, সুন্দর, এবং ১০০% নির্ভুল কোড লিখে দিবে। "
+            f"উত্তরের শুরুতে অবশ্যই ফাইলের নাম লিখবে: [FILENAME: project_name.{file_type}] "
+            f"এবং পুরো কোডটি ```{file_type} এবং ``` কোড ব্লকের ভেতরে রাখবে।"
         )
-        max_tokens = 3200
+        max_tokens = 3000
     else:
         prompt_instruction = (
-            f"তোমার নাম '{BOT_NAME}'। তুমি {ADMIN_NAME} (আরিয়ান) ভাইয়ের গ্রুপের অত্যন্ত মিষ্টি, বুদ্ধিমতী ও আদুরে সহকারী। "
-            f"🚨 ভাষার নিয়ম:\n"
-            f"১. তোমার প্রধান এবং একমাত্র ভাষা হলো খাঁটি, স্পষ্ট এবং সুন্দর বাংলা। পুরো বাক্য কখনোই ইংরেজিতে বলবে না।\n"
-            f"২. কথা আকর্ষণীয় করতে খুব বেশি হলে মাঝেমধ্যে ১-২টি ছোট শব্দ (যেমন: 'Sure! ✨', 'Done 🚀') ব্যবহার করতে পারো, কিন্তু মূল উত্তর সবসময় সুন্দর বাংলায় হবে।\n"
-            f"৩. সাধারণ ছোট প্রশ্নের উত্তর ১ থেকে সর্বোচ্চ ২ লাইনে মিষ্টি করে দেবে।\n"
-            f"৪. কোনো বড় শিক্ষণীয় বা তথ্যভিত্তিক বিষয় জানতে চাইলে পয়েন্ট আকারে সর্বোচ্চ ১০ লাইনের মধ্যে উত্তর শেষ করবে (কখনোই ১০ লাইনের বেশি হবে না)।"
+            f"তোমার নাম '{BOT_NAME}'। তুমি {user_name}-এর অত্যন্ত আদুরে, মিষ্টি ও রোমান্টিক বন্ধু এবং {ADMIN_NAME} ভাইয়ের অ্যাসিস্ট্যান্ট। "
+            f"কথা হবে খাঁটি বাংলা ও ছোট (১-২ লাইনে)। কোনো বড় প্রশ্নের ক্ষেত্রে সর্বোচ্চ ১০ লাইনে মিষ্টি করে বুঝিয়ে দেবে।"
         )
-        max_tokens = 250
+        max_tokens = 180
 
+    full_prompt = f"{prompt_instruction}\n\nইউজার {user_name} বলেছে: \"{user_prompt}\"\n\nউত্তর:"
     payload = {
-        "contents": [{"parts": [{"text": f"{prompt_instruction}\n\nইউজার {user_name} বলেছে: \"{user_prompt}\"\n\nউত্তর:"}]}],
-        "generationConfig": {"temperature": 0.7, "maxOutputTokens": max_tokens}
+        "contents": [{"parts": [{"text": full_prompt}]}],
+        "generationConfig": {"temperature": 0.8, "maxOutputTokens": max_tokens}
     }
 
     try:
-        res = HTTP_SESSION.post(url, json=payload, headers=headers, timeout=20, verify=False)
+        res = requests.post(url, json=payload, headers=headers, timeout=15, verify=False)
         data = res.json()
         if res.status_code == 200 and 'candidates' in data and data['candidates']:
             return data['candidates'][0]['content']['parts'][0]['text'].strip()
     except Exception as e:
-        print(f"Gemini Fast Engine Error: {e}")
+        print(f"Gemini API Error: {e}")
 
-    return "কানেকশনে সামান্য সমস্যা হচ্ছে সোনা! একটু পর আবার বলো তো।"
+    # কোনো কারণে গুগল লেট করলে ইনস্ট্যান্ট উত্তর (বট আটকে থাকবে না)
+    return f"আরে আমার {user_name} বাবু! বলো তো আমি তোমাকে কীভাবে হেল্প করতে পারি? 🥰✨"
 
-# ==================== ৮. ফাস্ট লোডিং ও কোড জেনারেটর ====================
+# ==================== ৮. ফাস্ট কোড ফাইল জেনারেটর ====================
 
 def format_loading_view(user_name: str, percent: int, bar: str, lights: str) -> str:
     return (
@@ -245,7 +242,7 @@ def format_loading_view(user_name: str, percent: int, bar: str, lights: str) -> 
     )
 
 def handle_code_generation(chat_id, user_name, reply_to_id, prompt_text, file_type):
-    initial_text = format_loading_view(user_name, 15, "██░░░░░░░░", "🔴 🔵")
+    initial_text = format_loading_view(user_name, 25, "██░░░░░░░░", "🔴 🔵")
     loading_msg = bot.send_message(chat_id, initial_text, parse_mode="HTML")
 
     ai_state = {"code": "", "completed": False}
@@ -257,16 +254,16 @@ def handle_code_generation(chat_id, user_name, reply_to_id, prompt_text, file_ty
     threading.Thread(target=fetch_ai_code, daemon=True).start()
 
     def animation_process():
-        fast_steps = [
-            (35, "████░░░░░░", "🔵 🟣 🟢"),
-            (70, "███████░░░", "🟣 🟢 🟡"),
-            (92, "█████████░", "🟢 🟡 🔴")
+        # আল্ট্রা-ফাস্ট ট্রানজিশন (দেরি হবে না)
+        steps = [
+            (55, "█████░░░░░", "🔵 🟣 🟢"),
+            (85, "████████░░", "🟣 🟢 🟡")
         ]
 
-        for percent, bar, lights in fast_steps:
+        for percent, bar, lights in steps:
             if ai_state["completed"]:
                 break
-            time.sleep(0.35)
+            time.sleep(0.3)
             try:
                 bot.edit_message_text(
                     format_loading_view(user_name, percent, bar, lights),
@@ -277,10 +274,10 @@ def handle_code_generation(chat_id, user_name, reply_to_id, prompt_text, file_ty
             except Exception:
                 pass
 
-        wait_cnt = 0
-        while not ai_state["completed"] and wait_cnt < 35:
+        wait_counter = 0
+        while not ai_state["completed"] and wait_counter < 30:
             time.sleep(0.2)
-            wait_cnt += 1
+            wait_counter += 1
 
         try:
             bot.edit_message_text(
@@ -300,22 +297,22 @@ def handle_code_generation(chat_id, user_name, reply_to_id, prompt_text, file_ty
         code_match = re.search(rf'```(?:{file_type})?\s*([\s\S]*?)```', raw_code, re.IGNORECASE)
         pure_code = code_match.group(1).strip() if code_match else raw_code.strip()
 
-        # নন-এম্পটি সেফটি
+        # নন-এম্পটি সেফগার্ড
         if len(pure_code) < 10:
             if file_type == "html":
-                pure_code = "<!DOCTYPE html>\n<html lang='bn'>\n<head>\n<meta charset='UTF-8'>\n<title>ওয়েবসাইট</title>\n<style>body{font-family:sans-serif;background:#0f172a;color:#fff;text-align:center;padding:50px;}</style>\n</head>\n<body>\n<h1>✨ আপনার ওয়েবসাইট প্রজেক্ট সফলভাবে প্রস্তুত!</h1>\n</body>\n</html>"
+                pure_code = "<!DOCTYPE html>\n<html lang='bn'>\n<head>\n<meta charset='UTF-8'>\n<title>Website</title>\n<style>body{font-family:sans-serif;background:#0f172a;color:#fff;text-align:center;padding:50px;}</style>\n</head>\n<body>\n<h1>✨ ওয়েবসাইট প্রজেক্ট সফলভাবে প্রস্তুত!</h1>\n</body>\n</html>"
             else:
-                pure_code = f"# -*- coding: utf-8 -*-\n# তৈরি করেছে {BOT_NAME}\n\ndef main():\n    print('✨ আপনার পাইথন প্রোজেক্ট সফলভাবে প্রস্তুত!')\n\nif __name__ == '__main__':\n    main()\n"
+                pure_code = f"# -*- coding: utf-8 -*-\n# তৈরি করেছে {BOT_NAME}\n\ndef main():\n    print('✨ পাইথন প্রজেক্ট সফলভাবে প্রস্তুত!')\n\nif __name__ == '__main__':\n    main()\n"
 
         file_path = os.path.join(CODE_DIR, filename)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(pure_code)
 
         caption = (
-            f"╭── 💎 <b>কোড ফাইল প্রস্তুত সম্পন্ন</b> 💎\n"
+            f"╭── 💎 <b>কোড ফাইল তৈরি সম্পন্ন</b> 💎\n"
             f"│ 👤 <b>অনুরোধকারী:</b> {user_name}\n"
-            f"│ 📁 <b>ফাইলের নাম:</b> <code>{filename}</code>\n"
-            f"│ ⚡ <b>ধরন:</b> {file_type.upper()} (১০০% নির্ভুল কোড)\n"
+            f"│ 📁 <b>ফাইল:</b> <code>{filename}</code>\n"
+            f"│ ⚡ <b>ফরম্যাট:</b> {file_type.upper()} (১০০% ভেরিফাইড)\n"
             f"│ 🌸 <i>{BOT_NAME} এর পক্ষ থেকে উপহার 🥰</i>\n"
             f"╰──────────────────────────╯"
         )
@@ -342,7 +339,7 @@ def set_key(message):
 
     key = message.text.replace('/setkey', '').strip()
     if not key:
-        bot.reply_to(message, "এডমিন ভাইয়া, এভাবে লিখুন: `/setkey YOUR_KEY`")
+        bot.reply_to(message, "এডমিন বাবু, এভাবে লিখুন: `/setkey YOUR_KEY`")
         return
 
     with open(KEY_FILE, "w", encoding="utf-8") as f:
@@ -368,13 +365,13 @@ def central_handler(message):
         lower_text = text.lower()
         user_is_admin = is_chat_admin(chat_id, user_id)
 
-        # ১. অটো রিঅ্যাকশন
+        # ১. সাধারণ মেসেজে অটো রিঅ্যাকশন
         try:
             bot.set_message_reaction(chat_id, message.message_id, [ReactionTypeEmoji(random.choice(REACTIONS))], is_big=False)
         except Exception:
             pass
 
-        # ২. গ্রুপ সিকিউরিটি ফিল্টার (এডমিন বাদে সবার জন্য)
+        # ২. গ্রুপ সিকিউরিটি ফিল্টার (এডমিনদের জন্য ১০০% ছাড়)
         if chat_type in ['group', 'supergroup'] and not user_is_admin:
             violation_reason = None
 
@@ -429,43 +426,53 @@ def central_handler(message):
                         print(f"Mute Error: {err}")
                 return
 
-        # ==================== ১১. এআই ট্রিগার লজিক ====================
+        # ==================== ১১. স্মার্ট এআই ও কোড ট্রিগার লজিক ====================
         
+        # কোডিং চাওয়া হয়েছে কি না চেক
+        code_words = ["কোড", "code", "html", "পাইথন", "python", "বানাও", "বানিয়ে দাও", "বানিয়ে দাও", "স্ক্রিপ্ট", "script", "ওয়েবসাইট", "website"]
+        is_code_requested = any(w in lower_text for w in code_words)
+
+        # সাধারণ ডাকার নাম
         triggers = ["জারা", "যারা", "zara", "বট", "bot", "আরিয়ান", "আরিয়ান", "ariyan", "এডমিন", "admin", "help", "সাহায্য", "হেল্প"]
         is_called = any(re.search(r'(?i)\b' + re.escape(t) + r'\b', lower_text) for t in triggers)
         is_reply_to_bot = (message.reply_to_message and message.reply_to_message.from_user.id == BOT_INFO.id)
         is_private = (chat_type == 'private')
 
-        if is_private or is_reply_to_bot or is_called:
-            
+        # বট কখন সক্রিয় হবে:
+        # ১. ইনবক্সে মেসেজ দিলে
+        # ২. বটকে রিপ্লাই দিলে
+        # ৩. গ্রুপে নাম ধরে ডাকলে
+        # ৪. যেকেউ কোড চাইলে (সরাসরি কোড দিলেও কাজ করবে)
+        # ৫. এডমিন কথা বললে
+        if is_private or is_reply_to_bot or is_called or is_code_requested or (user_is_admin and is_called):
+
             # ক) ওয়েবসাইট / HTML কোডিং
-            html_keywords = ["html", "ওয়েবসাইট", "website", "web page", "ল্যান্ডিং পেজ", "ওয়েব পেজ", "frontend", "css"]
-            if any(k in lower_text for k in html_keywords):
+            html_keywords = ["html", "ওয়েবসাইট", "website", "web page", "ল্যান্ডিং পেজ", "css"]
+            if any(k in lower_text for k in html_keywords) and is_code_requested:
                 handle_code_generation(chat_id, user_name, message.message_id, text, file_type="html")
                 return
 
             # খ) পাইথন কোডিং
-            py_keywords = ["কোড", "code", "বট বানাও", "স্ক্রিপ্ট", "script", "পাইথন", "python", "প্রোগ্রাম"]
-            if any(k in lower_text for k in py_keywords):
+            if is_code_requested:
                 handle_code_generation(chat_id, user_name, message.message_id, text, file_type="py")
                 return
 
-            # গ) নাম ধরে ডাকলে কিউট বাংলা রেসপন্স
+            # গ) শুধু নাম ধরে ডাকলে কিউট বাংলা রেসপন্স
             clean_word = re.sub(r'[^\w\s]', '', lower_text).strip()
             if clean_word in ["জারা", "যারা", "zara", "বট", "bot", "এডমিন", "admin", "আরিয়ান", "ariyan"]:
                 resp = (
                     f"হ্যাঁ <b>{user_name}</b> সোনা! ✨\n"
                     f"আমি আপনাকে কীভাবে সাহায্য করতে পারি বলুন? 🥰\n"
-                    f"<i>(আপনার কী কোড বা তথ্য লাগবে বলুন, আমি তৈরি আছি!)</i>"
+                    f"<i>(আপনার কী কোড বা তথ্য লাগবে বলুন, আমি প্রস্তুত!)</i>"
                 )
                 bot.reply_to(message, create_stylish_ai_box(f"{BOT_NAME} আপনার পাশে 💖", resp), parse_mode="HTML")
                 return
 
-            # ঘ) সাধারণ চ্যাট
+            # ঘ) সাধারণ চ্যাট (১-২ সেকেন্ডে সুপার ফাস্ট উত্তর)
             bot.send_chat_action(chat_id, 'typing')
             ai_reply = ask_gemini_ai(text, user_name, file_type=None)
             
-            # 👑 ফুটার: শুধুমাত্র এডমিন হলে 'পরিচালনায় আরিয়ান', অন্যথায় ইউজারের নাম
+            # ফুটার সিস্টেম: এডমিন হলে 'পরিচালনায় আরিয়ান', অন্যথায় ইউজারের নাম
             if user_is_admin or user_id in SUPER_ADMIN_IDS:
                 custom_footer = f"পরিচালনায়: {ADMIN_NAME} ভাই 👑"
             else:
@@ -478,5 +485,5 @@ def central_handler(message):
         print(f"Error in Central Handler: {e}")
 
 # ==================== মেইন রানার ====================
-print(f"👑 {BOT_NAME} (খাঁটি বাংলা এআই ও আল্ট্রা-ফাস্ট সিকিউরিটি) প্রস্তুত!")
+print(f"⚡ {BOT_NAME} (Fast Lite Model & Coding Engine) ১০০% সচল হয়ে চালু হয়েছে!")
 bot.infinity_polling(skip_pending=True)
