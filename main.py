@@ -1,3 +1,31 @@
+# ================= 🚀 অটোমেটিক মডিউল ডাউনলোডার সিস্টেম =================
+import sys
+import subprocess
+
+REQUIRED_MODULES = {
+    "telegram": "python-telegram-bot",
+    "httpx": "httpx"
+}
+
+def auto_install_dependencies():
+    print("🔍 সিস্টেমের প্রয়োজনীয় মডিউল চেক করা হচ্ছে...")
+    for import_name, package_name in REQUIRED_MODULES.items():
+        try:
+            __import__(import_name)
+        except ImportError:
+            print(f"📦 '{package_name}' পাওয়া যায়নি! অটোমেটিক ডাউনলোড ও ইন্সটল করা হচ্ছে...")
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+                print(f"✅ সফলভাবে ইন্সটল হয়েছে: {package_name}")
+            except Exception as e:
+                print(f"❌ '{package_name}' ইন্সটল করতে সমস্যা হয়েছে: {e}")
+                sys.exit(1)
+    print("✨ সব মডিউল প্রস্তুত! বট লোড হচ্ছে...\n")
+
+# সবার আগে মডিউল চেক ও ইন্সটল সম্পন্ন করা
+auto_install_dependencies()
+
+# ================= 📦 মূল লাইব্রেরি ইমপোর্ট =================
 import os
 import re
 import io
@@ -19,8 +47,8 @@ from telegram.ext import (
 )
 
 # ================= ১. কনফিগারেশন =================
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"  # আপনার টেলিগ্রাম বট টোকেন দিন
-ADMIN_ID = 1234567890  # 👉 আপনার টেলিগ্রাম নিউমেরিক আইডি দিন (@userinfobot থেকে পাবেন)
+TELEGRAM_BOT_TOKEN = "8526557973:AAFYIh3NcXYbefpFj9An_lic13fFjSyrAqo"  # আপনার টেলিগ্রাম বট টোকেন দিন
+ADMIN_ID = 6805684286  # 👉 আপনার টেলিগ্রাম নিউমেরিক আইডি দিন (@userinfobot থেকে পাবেন)
 
 WORKING_MODEL = "gemini-flash-lite-latest"
 CONFIG_FILE = "config.json"
@@ -506,10 +534,9 @@ async def setkey_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(msg="Zara Bot Error:", exc_info=context.error)
 
-# ================= ৯. মেইন (JobQueue Disabler Fix) =================
+# ================= ৯. মেইন =================
 def main():
     print(f"💖 Zara AI Bot ({WORKING_MODEL}) লাইভ হচ্ছে...")
-    # 👉 job_queue(None) দিয়ে টাইমজোন বাগ চিরতরে ফিক্স করা হলো
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).job_queue(None).build()
 
     app.add_handler(CommandHandler("start", start_command))
@@ -517,7 +544,7 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
     app.add_error_handler(error_handler)
 
-    print("🚀 Zara AI এখন VPS এবং Termux উভয় জায়গায় কোনো ক্র্যাশ ছাড়াই চলবে!")
+    print("🚀 Zara AI এখন সম্পূর্ণ রেডি এবং মেসেজ শোনার জন্য প্রস্তুত!")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
