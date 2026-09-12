@@ -46,14 +46,22 @@ from telegram.ext import (
 )
 
 # ================= ১. কনফিগারেশন =================
-TELEGRAM_BOT_TOKEN = "8526557973:AAFYIh3NcXYbefpFj9An_lic13fFjSyrAqo"  # আপনার টেলিগ্রাম বট টোকেন দিন
-ADMIN_ID = 6805684286  # 👉 আপনার টেলিগ্রাম নিউমেরিক আইডি দিন (@userinfobot থেকে পাবেন)
+TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"  # আপনার টেলিগ্রাম বট টোকেন দিন
+ADMIN_ID = 1234567890  # 👉 আপনার টেলিগ্রাম নিউমেরিক আইডি দিন (@userinfobot থেকে পাবেন)
 
 WORKING_MODEL = "gemini-flash-lite-latest"
 CONFIG_FILE = "config.json"
 VOICE_DIR = "zara_voices"
 
-# ================= ২. ৩১টি অডিও ফাইল ম্যাপিং =================
+# ব্রাউজার হেডার (Catbox ব্লক প্রতিরোধে)
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://catbox.moe/"
+}
+
+# ================= ২. ৩১টি অডিও ফাইল ডাটাবেস =================
 AUDIO_DATA = {
     "🥱": ("yawn.mp3", "https://files.catbox.moe/9pou40.mp3"),
     "😁": ("smile.mp3", "https://files.catbox.moe/60cwcg.mp3"),
@@ -97,25 +105,30 @@ EXTENDED_EMOJI_CLUSTER = {
     "😨": "😱", "😰": "😱", "😯": "😱", "😲": "😱", "🤯": "😱", "👶": "🍼", "🧸": "🍼"
 }
 
-# ================= ৩. ভয়েস ফাইল প্রি-ডাউনলোড ইঞ্জিন =================
+# ================= ৩. ক্লাউড ও রেলওয়ে ফ্রেন্ডলি ডাউনলোডার =================
 async def pre_download_all_voices():
-    """বট চালু হওয়ার সময় সব ভয়েস লোকাল স্টোরেজে ক্যাশ করে রাখবে"""
     os.makedirs(VOICE_DIR, exist_ok=True)
-    print("📥 সমস্ত অডিও ভয়েস ফাইল প্রি-ডাউনলোড ও ভেরিফাই করা হচ্ছে...")
+    print("📥 অডিও ভয়েস ফাইল প্রি-ডাউনলোড ও ক্যাশ ভেরিফাই করা হচ্ছে...")
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(headers=BROWSER_HEADERS, follow_redirects=True, timeout=30.0) as client:
         for emoji_symbol, (filename, url) in AUDIO_DATA.items():
             filepath = os.path.join(VOICE_DIR, filename)
-            if not os.path.exists(filepath) or os.path.getsize(filepath) == 0:
-                try:
-                    resp = await client.get(url)
-                    if resp.status_code == 200:
-                        with open(filepath, "wb") as f:
-                            f.write(resp.content)
-                        print(f"  ✅ ক্যাশ করা হয়েছে: {filename} ({emoji_symbol})")
-                except Exception as e:
-                    print(f"  ⚠️ ডাউনলোড ফেইলড {filename}: {e}")
-    print("🎙️ সমস্ত ভয়েস ফাইল ১০০% প্রস্তুত!\n")
+            # যদি ফাইল না থাকে বা সাইজ ০ হয় তবে ডাউনলোড করবে
+            if not os.path.exists(filepath) or os.path.getsize(filepath) < 1000:
+                for attempt in range(3):
+                    try:
+                        resp = await client.get(url)
+                        if resp.status_code == 200 and len(resp.content) > 1000:
+                            with open(filepath, "wb") as f:
+                                f.write(resp.content)
+                            print(f"  ✅ সফলভাবে সেভ হয়েছে: {filename} ({emoji_symbol})")
+                            break
+                    except Exception as e:
+                        if attempt == 2:
+                            print(f"  ⚠️ লোকাল ক্যাশ স্কিপ হয়েছে ({filename}), রিয়েল-টাইম ফলব্যাক অ্যাক্টিভ থাকবে।")
+                        await asyncio.sleep(0.5)
+                await asyncio.sleep(0.2)  # Catbox রেট-লিমিট রোধে সামান্য বিরতি
+    print("🎙️ ভয়েস ইঞ্জিন প্রস্তুত!\n")
 
 def load_api_key():
     if os.path.exists(CONFIG_FILE):
@@ -161,7 +174,7 @@ logging.basicConfig(
 
 user_warnings = defaultdict(int)
 
-# ================= ৫. ফিল্টারিং ডাটাবেস (২০০+ গালি ও ২০০+ ইনবক্স প্যাটার্ন) =================
+# ================= ৫. ফিল্টারিং ডাটাবেস =================
 URL_PATTERN = re.compile(
     r'(https?://[^\s]+)|(www\.[^\s]+)|(t\.me/[^\s]+)|(telegram\.me/[^\s]+)',
     re.IGNORECASE
@@ -256,7 +269,7 @@ async def delete_after_delay(msg, delay=8):
     except Exception:
         pass
 
-# ================= ৬. মডারেশন ইঞ্জিন (এডমিন ইমিউন) =================
+# ================= ৬. মডারেশন ইঞ্জিন =================
 async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     message = update.effective_message
     user = update.effective_user
@@ -346,7 +359,7 @@ async def ask_gemini_rest(prompt: str) -> str:
         else:
             return "🥺 উফ্ সোনা, বুঝতে পারলাম না! আরেকবার বলবে প্লিজ?"
 
-# ================= ৮. RGB লোডিং ও সুপার-ফাস্ট ভয়েস প্লেয়ার =================
+# ================= ৮. RGB লোডিং ও ট্রিপল-লেয়ার ভয়েস সেন্ডার =================
 RGB_FRAMES = [
     "✨ 🔴 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: প্রজেক্ট আর্কিটেকচার ডিজাইন হচ্ছে...\n[▒▒▒▒▒▒▒▒▒▒] 12% ⚡",
     "⚡ 🟠 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: এন্টারপ্রাইজ লজিক ও অ্যালগরিদম তৈরি হচ্ছে...\n[██▒▒▒▒▒▒▒▒] 34% 🔥",
@@ -369,23 +382,44 @@ async def run_rgb_loading_animation(status_msg, stop_event):
         except Exception:
             break
 
-async def send_local_voice_note(update: Update, emoji_key: str):
-    """লোকাল ক্যাশ থেকে ১০০% নিশ্চিত ভয়েস নোট সেন্ড করা"""
-    if emoji_key in AUDIO_DATA:
-        filename = AUDIO_DATA[emoji_key][0]
-        filepath = os.path.join(VOICE_DIR, filename)
-        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
-            try:
-                with open(filepath, "rb") as voice_file:
-                    await update.effective_message.reply_voice(voice=voice_file)
-            except Exception as e:
-                logging.error(f"Local Voice Send Error: {e}")
+async def send_bulletproof_voice(update: Update, emoji_key: str):
+    """৩ লেয়ারের বুলেটপ্রুফ ভয়েস সেন্ডার"""
+    if emoji_key not in AUDIO_DATA:
+        return
+
+    filename, audio_url = AUDIO_DATA[emoji_key]
+    filepath = os.path.join(VOICE_DIR, filename)
+
+    # লেয়ার ১: লোকাল ক্যাশ থেকে পাঠানো
+    if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+        try:
+            with open(filepath, "rb") as voice_file:
+                await update.effective_message.reply_voice(voice=voice_file)
+                return
+        except Exception as e:
+            logging.error(f"Local voice error: {e}")
+
+    # লেয়ার ২: মেমোরিতে সরাসরি ব্রাউজার হেডার দিয়ে ডাউনলোড করে পাঠানো
+    try:
+        async with httpx.AsyncClient(headers=BROWSER_HEADERS, timeout=15.0) as client:
+            resp = await client.get(audio_url)
+            if resp.status_code == 200:
+                voice_bytes = io.BytesIO(resp.content)
+                voice_bytes.name = "voice.mp3"
+                await update.effective_message.reply_voice(voice=voice_bytes)
+                return
+    except Exception as e:
+        logging.error(f"Memory voice stream error: {e}")
+
+    # লেয়ার ৩: টেলিগ্রাম সার্ভার ডাইরেক্ট ইউআরএল সেন্ড
+    try:
+        await update.effective_message.reply_voice(voice=audio_url)
+    except Exception as e:
+        logging.error(f"Telegram direct URL error: {e}")
 
 def detect_emotion_locally(text: str) -> str:
-    """ইমোজি ছাড়াও সাধারণ টেক্সটের ভাবমূর্তি বুঝে ইমোজি কী রিটার্ন করা"""
     text_lower = text.lower()
 
-    # ১. সরাসরি ইমোজি চেক
     for emoji_char in AUDIO_DATA:
         if emoji_char in text:
             return emoji_char
@@ -393,7 +427,6 @@ def detect_emotion_locally(text: str) -> str:
         if ext_emoji in text:
             return target_emoji
 
-    # ২. টেক্সট সেন্টিমেন্ট এনালাইসিস (ইমোজি ছাড়া কথা বললেও মিলবে)
     if re.search(r'\b(haha|hehe|hihi|xixi|lol|lmao|rofl|kikiki|হাসি|হাসতেছি|হাসতে হাসতে|মজা পাইলাম)\b', text_lower):
         return "🤣"
     if re.search(r'\b(kanna|kosto|mon kharap|chokhe pani|kanchi|buke kosto|কান্না|কষ্ট|চোখে পানি|মন খারাপ|খারাপ লাগতেছে|মন ভালো নেই)\b', text_lower):
@@ -418,26 +451,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user_text = update.effective_message.text.strip()
 
-    # এডমিন ইনবক্সে সরাসরি API Key পেস্ট করলে সেট হবে
     if chat.type == "private" and user.id == ADMIN_ID:
         if (user_text.startswith("AIza") or len(user_text) >= 35) and not user_text.startswith("/"):
             CURRENT_GEMINI_KEY = user_text
             save_api_key(user_text)
             await update.effective_message.reply_text(
                 "✅ **API Key সফলভাবে সেট করা হয়েছে সোনা!** 💖\n"
-                "🚀 Zara AI এখন ফুল এক্টিভ এবং লোকাল ভয়েস ইঞ্জিন রেডি!",
+                "🚀 Zara AI এখন ফুল এক্টিভ এবং রেলওয়ে/VPS-এ সম্পূর্ণ প্রস্তুত!",
                 parse_mode="Markdown"
             )
             return
 
-    # মডারেশন চেক
     if await handle_moderation(update, context):
         return
 
     bot_username = (await context.bot.get_me()).username
     is_group = chat.type in ["group", "supergroup"]
 
-    # আরিয়ান বা এডমিন মেনশন স্পেশাল ট্রিগার
     is_asking_admin = bool(re.search(r'\b(admin|এডমিন|এডমিনের|আরিয়ান|আরিয়ান|ariyan|aryan|লিডার|leader)\b', user_text, re.IGNORECASE))
 
     if is_group and f"@{bot_username}" not in user_text and not update.message.reply_to_message and not is_asking_admin:
@@ -450,7 +480,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_display_name = user.first_name if user.first_name else "বাবু"
     full_prompt_with_name = f"[User Name: {user_display_name}]\n{clean_user_prompt}"
 
-    # RGB অ্যানিমেশন শুরু
     status_msg = await update.effective_message.reply_text(
         f"✨ 🔴 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: {user_display_name}-এর জন্য প্রসেসিং শুরু হচ্ছে... 💖"
     )
@@ -467,10 +496,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        # ১. লোকাল ভয়েস ডিটেকশন
         matched_emoji = detect_emotion_locally(clean_user_prompt)
 
-        # ২. AI এর ইমোশন ট্যাগ চেক
         if not matched_emoji:
             emoji_tag_match = re.search(r"\[EMOJI:\s*(.*?)\]", ai_reply)
             if emoji_tag_match:
@@ -481,8 +508,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     matched_emoji = EXTENDED_EMOJI_CLUSTER[tag_emoji]
 
         ai_reply = re.sub(r"\[EMOJI:\s*.*?\]", "", ai_reply).strip()
-
-        # ৩. কোড ব্লক ডিটেকশন
         code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", ai_reply, re.DOTALL)
 
         if code_blocks:
@@ -513,9 +538,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.effective_message.reply_text(ai_reply, parse_mode="Markdown")
             
-            # ৪. ১০০% নিশ্চিত ক্যাশ থেকে লোকাল ভয়েস সেন্ড করা
+            # ট্রিপল-লেয়ার ভয়েস সেন্ড
             if matched_emoji:
-                await send_local_voice_note(update, matched_emoji)
+                await send_bulletproof_voice(update, matched_emoji)
 
     except Exception as e:
         stop_event.set()
@@ -578,7 +603,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 def main():
     print(f"💖 Zara AI Bot ({WORKING_MODEL}) চালু হচ্ছে...")
     
-    # ব্যাকগ্রাউন্ডে সব অডিও আগে লোকাল স্টোরেজে নামিয়ে নেওয়া
+    # ব্যাকগ্রাউন্ডে ব্রাউজার হেডার সহ সব অডিও ডাউনলোড করা
     asyncio.run(pre_download_all_voices())
 
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).job_queue(None).build()
@@ -588,7 +613,7 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
     app.add_error_handler(error_handler)
 
-    print("🚀 Zara AI এখন সম্পূর্ণ রেডি এবং লোকাল ভয়েস মেমোরি দিয়ে একটিভ!")
+    print("🚀 Zara AI এখন রেলওয়ে ও VPS-এ সম্পূর্ণ অ্যাক্টিভ!")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
