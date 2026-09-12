@@ -1,4 +1,4 @@
-# ================= 🚀 অটোমেটিক মডিউল ডাউনলোডার সিস্টেম =================
+# ================= 🚀 অটোমেটিক মডিউল ডাউনলোডার =================
 import sys
 import subprocess
 
@@ -13,7 +13,7 @@ def auto_install_dependencies():
         try:
             __import__(import_name)
         except ImportError:
-            print(f"📦 '{package_name}' পাওয়া যায়নি! অটোমেটিক ডাউনলোড ও ইন্সটল করা হচ্ছে...")
+            print(f"📦 '{package_name}' পাওয়া যায়নি! ইন্সটল করা হচ্ছে...")
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
                 print(f"✅ সফলভাবে ইন্সটল হয়েছে: {package_name}")
@@ -22,7 +22,6 @@ def auto_install_dependencies():
                 sys.exit(1)
     print("✨ সব মডিউল প্রস্তুত! বট লোড হচ্ছে...\n")
 
-# সবার আগে মডিউল চেক ও ইন্সটল সম্পন্ন করা
 auto_install_dependencies()
 
 # ================= 📦 মূল লাইব্রেরি ইমপোর্ট =================
@@ -52,40 +51,41 @@ ADMIN_ID = 6805684286  # 👉 আপনার টেলিগ্রাম নি
 
 WORKING_MODEL = "gemini-flash-lite-latest"
 CONFIG_FILE = "config.json"
+VOICE_DIR = "zara_voices"
 
-# ================= ২. অডিও ডাটাবেস ও ব্রড ইমোজি ক্লাস্টার =================
-EMOJI_AUDIO_MAP = {
-    "🥱": "https://files.catbox.moe/9pou40.mp3",
-    "😁": "https://files.catbox.moe/60cwcg.mp3",
-    "😌": "https://files.catbox.moe/epqwbx.mp3",
-    "🥺": "https://files.catbox.moe/wc17iq.mp3",
-    "🤭": "https://files.catbox.moe/cu0mpy.mp3",
-    "😅": "https://files.catbox.moe/jl3pzb.mp3",
-    "😏": "https://files.catbox.moe/z9e52r.mp3",
-    "😞": "https://files.catbox.moe/tdimtx.mp3",
-    "🤫": "https://files.catbox.moe/0uii99.mp3",
-    "🍼": "https://files.catbox.moe/p6ht91.mp3",
-    "🤔": "https://files.catbox.moe/hy6m6w.mp3",
-    "🥰": "https://files.catbox.moe/dv9why.mp3",
-    "🤦": "https://files.catbox.moe/ivlvoq.mp3",
-    "😘": "https://files.catbox.moe/sbws0w.mp3",
-    "😑": "https://files.catbox.moe/p78xfw.mp3",
-    "😢": "https://files.catbox.moe/shxwj1.mp3",
-    "🙊": "https://files.catbox.moe/3bejxv.mp3",
-    "🤨": "https://files.catbox.moe/4aci0r.mp3",
-    "😡": "https://files.catbox.moe/shxwj1.mp3",
-    "🙈": "https://files.catbox.moe/3qc90y.mp3",
-    "😍": "https://files.catbox.moe/qjfk1b.mp3",
-    "😭": "https://files.catbox.moe/itm4g0.mp3",
-    "😱": "https://files.catbox.moe/mu0kka.mp3",
-    "😻": "https://files.catbox.moe/y8ul2j.mp3",
-    "😿": "https://files.catbox.moe/tqxemm.mp3",
-    "💔": "https://files.catbox.moe/6yanv3.mp3",
-    "🤣": "https://files.catbox.moe/2sweut.mp3",
-    "🥹": "https://files.catbox.moe/jf85xe.mp3",
-    "😩": "https://files.catbox.moe/b4m5aj.mp3",
-    "🫣": "https://files.catbox.moe/ttb6hi.mp3",
-    "🐸": "https://files.catbox.moe/utl83s.mp3"
+# ================= ২. ৩১টি অডিও ফাইল ম্যাপিং =================
+AUDIO_DATA = {
+    "🥱": ("yawn.mp3", "https://files.catbox.moe/9pou40.mp3"),
+    "😁": ("smile.mp3", "https://files.catbox.moe/60cwcg.mp3"),
+    "😌": ("relieved.mp3", "https://files.catbox.moe/epqwbx.mp3"),
+    "🥺": ("pleading.mp3", "https://files.catbox.moe/wc17iq.mp3"),
+    "🤭": ("giggle.mp3", "https://files.catbox.moe/cu0mpy.mp3"),
+    "😅": ("sweat_smile.mp3", "https://files.catbox.moe/jl3pzb.mp3"),
+    "😏": ("smirk.mp3", "https://files.catbox.moe/z9e52r.mp3"),
+    "😞": ("disappointed.mp3", "https://files.catbox.moe/tdimtx.mp3"),
+    "🤫": ("shh.mp3", "https://files.catbox.moe/0uii99.mp3"),
+    "🍼": ("milk.mp3", "https://files.catbox.moe/p6ht91.mp3"),
+    "🤔": ("thinking.mp3", "https://files.catbox.moe/hy6m6w.mp3"),
+    "🥰": ("in_love.mp3", "https://files.catbox.moe/dv9why.mp3"),
+    "🤦": ("facepalm.mp3", "https://files.catbox.moe/ivlvoq.mp3"),
+    "😘": ("kiss.mp3", "https://files.catbox.moe/sbws0w.mp3"),
+    "😑": ("expressionless.mp3", "https://files.catbox.moe/p78xfw.mp3"),
+    "😢": ("crying.mp3", "https://files.catbox.moe/shxwj1.mp3"),
+    "🙊": ("speak_no_evil.mp3", "https://files.catbox.moe/3bejxv.mp3"),
+    "🤨": ("raised_eyebrow.mp3", "https://files.catbox.moe/4aci0r.mp3"),
+    "😡": ("angry.mp3", "https://files.catbox.moe/shxwj1.mp3"),
+    "🙈": ("see_no_evil.mp3", "https://files.catbox.moe/3qc90y.mp3"),
+    "😍": ("heart_eyes.mp3", "https://files.catbox.moe/qjfk1b.mp3"),
+    "😭": ("sob.mp3", "https://files.catbox.moe/itm4g0.mp3"),
+    "😱": ("scream.mp3", "https://files.catbox.moe/mu0kka.mp3"),
+    "😻": ("heart_cat.mp3", "https://files.catbox.moe/y8ul2j.mp3"),
+    "😿": ("crying_cat.mp3", "https://files.catbox.moe/tqxemm.mp3"),
+    "💔": ("broken_heart.mp3", "https://files.catbox.moe/6yanv3.mp3"),
+    "🤣": ("rofl.mp3", "https://files.catbox.moe/2sweut.mp3"),
+    "🥹": ("holding_tears.mp3", "https://files.catbox.moe/jf85xe.mp3"),
+    "😩": ("weary.mp3", "https://files.catbox.moe/b4m5aj.mp3"),
+    "🫣": ("peeking.mp3", "https://files.catbox.moe/ttb6hi.mp3"),
+    "🐸": ("frog.mp3", "https://files.catbox.moe/utl83s.mp3")
 }
 
 EXTENDED_EMOJI_CLUSTER = {
@@ -96,6 +96,26 @@ EXTENDED_EMOJI_CLUSTER = {
     "😴": "🥱", "💤": "🥱", "🛌": "🥱", "😳": "🙈", "😶‍🌫️": "🫣", "🤫": "🤫", "🧐": "🤔", "❓": "🤔", "🤷‍♂️": "🤔", "🤷‍♀️": "🤔",
     "😨": "😱", "😰": "😱", "😯": "😱", "😲": "😱", "🤯": "😱", "👶": "🍼", "🧸": "🍼"
 }
+
+# ================= ৩. ভয়েস ফাইল প্রি-ডাউনলোড ইঞ্জিন =================
+async def pre_download_all_voices():
+    """বট চালু হওয়ার সময় সব ভয়েস লোকাল স্টোরেজে ক্যাশ করে রাখবে"""
+    os.makedirs(VOICE_DIR, exist_ok=True)
+    print("📥 সমস্ত অডিও ভয়েস ফাইল প্রি-ডাউনলোড ও ভেরিফাই করা হচ্ছে...")
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for emoji_symbol, (filename, url) in AUDIO_DATA.items():
+            filepath = os.path.join(VOICE_DIR, filename)
+            if not os.path.exists(filepath) or os.path.getsize(filepath) == 0:
+                try:
+                    resp = await client.get(url)
+                    if resp.status_code == 200:
+                        with open(filepath, "wb") as f:
+                            f.write(resp.content)
+                        print(f"  ✅ ক্যাশ করা হয়েছে: {filename} ({emoji_symbol})")
+                except Exception as e:
+                    print(f"  ⚠️ ডাউনলোড ফেইলড {filename}: {e}")
+    print("🎙️ সমস্ত ভয়েস ফাইল ১০০% প্রস্তুত!\n")
 
 def load_api_key():
     if os.path.exists(CONFIG_FILE):
@@ -113,35 +133,23 @@ def save_api_key(key: str):
 
 CURRENT_GEMINI_KEY = load_api_key()
 
-# ================= ৩. ZARA AI পারসোনালিটি =================
+# ================= ৪. ZARA AI পারসোনালিটি =================
 ZARA_SYSTEM_PROMPT = """
 You are 'Zara' (জারা) — an ultra-intelligent, sweet girlfriend & genius Lead Software Architect.
+Aryan (আরিয়ান) is your master / creator / lead admin.
 
 Core Rules:
 1. ALWAYS address the user by their provided name (e.g., 'আরে [User Name] বাবু!', '[User Name] সোনা 🥰').
-2. When asked for code or tech:
+2. If anyone mentions 'Admin', 'এডমিন', 'Aryan', 'আরিয়ান', respond with immense respect and say you are Aryan's personal assistant Zara, ready to help!
+3. When asked for code or tech:
    - Keep your text message EXTREMELY SHORT (2 to 4 lines max).
    - In text, only say a cute line with their name and a 1-2 line quick command on how to run.
    - Put 100% of the massive, enterprise-grade, highly advanced code inside markdown blocks (```python, ```html, etc.) so it gets extracted directly to a file.
-3. In general casual chat:
+4. In general casual chat:
    - Be an affectionate, slightly possessive, cute AI girlfriend with emojis (💖, 🥰, 🥺, 😉, ✨).
-
-4. ADVANCED EMOTION & SENTIMENT DETECTION:
-   Carefully analyze the user's emotion from their text or emojis:
-   - Laughing / Fun ➔ Tag: [EMOJI: 🤣] or [EMOJI: 😁]
-   - Crying / Deep Sadness ➔ Tag: [EMOJI: 😭] or [EMOJI: 😢]
-   - Heartbreak / Betrayal ➔ Tag: [EMOJI: 💔]
-   - Angry / Mad ➔ Tag: [EMOJI: 😡]
-   - Love / Flirty / Romantic ➔ Tag: [EMOJI: 🥰] or [EMOJI: 😘] or [EMOJI: 😍]
-   - Sleepy / Tired ➔ Tag: [EMOJI: 🥱]
-   - Shy / Blushing ➔ Tag: [EMOJI: 🙈] or [EMOJI: 🫣]
-   - Shocked / Surprised ➔ Tag: [EMOJI: 😱]
-   - Thinking / Confused ➔ Tag: [EMOJI: 🤔]
-   - Bored / Facepalm ➔ Tag: [EMOJI: 🤦]
-   - Cute begging / Pouting ➔ Tag: [EMOJI: 🥺]
-   
-   If matched, append EXACTLY ONE tag at the VERY END on a new line: [EMOJI: <one_of_the_allowed_emojis>]
-   DO NOT append ANY [EMOJI: ...] tag for casual talk or coding queries!
+5. EMOTION DETECTION:
+   - If user expresses strong emotion, append EXACTLY ONE tag at the end on a new line: [EMOJI: 🤣] or [EMOJI: 😭] or [EMOJI: 💔] or [EMOJI: 😡] or [EMOJI: 🥰] or [EMOJI: 🥱] or [EMOJI: 🙈] or [EMOJI: 😱] or [EMOJI: 🥺] or [EMOJI: 🤔] or [EMOJI: 🤦]
+   - DO NOT append ANY tag for casual/normal chat or code!
 
 Always reply in natural Bengali / Banglish.
 """
@@ -153,7 +161,7 @@ logging.basicConfig(
 
 user_warnings = defaultdict(int)
 
-# ================= ৪. ফিল্টারিং ডাটাবেস =================
+# ================= ৫. ফিল্টারিং ডাটাবেস (২০০+ গালি ও ২০০+ ইনবক্স প্যাটার্ন) =================
 URL_PATTERN = re.compile(
     r'(https?://[^\s]+)|(www\.[^\s]+)|(t\.me/[^\s]+)|(telegram\.me/[^\s]+)',
     re.IGNORECASE
@@ -248,7 +256,7 @@ async def delete_after_delay(msg, delay=8):
     except Exception:
         pass
 
-# ================= ৫. মডারেশন ইঞ্জিন =================
+# ================= ৬. মডারেশন ইঞ্জিন (এডমিন ইমিউন) =================
 async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     message = update.effective_message
     user = update.effective_user
@@ -314,7 +322,7 @@ async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     return False
 
-# ================= ৬. GEMINI REST API ENGINE =================
+# ================= ৭. GEMINI REST API ENGINE =================
 async def ask_gemini_rest(prompt: str) -> str:
     global CURRENT_GEMINI_KEY
     if not CURRENT_GEMINI_KEY:
@@ -338,7 +346,7 @@ async def ask_gemini_rest(prompt: str) -> str:
         else:
             return "🥺 উফ্ সোনা, বুঝতে পারলাম না! আরেকবার বলবে প্লিজ?"
 
-# ================= ৭. RGB লোডিং ও ভয়েস হ্যান্ডলার =================
+# ================= ৮. RGB লোডিং ও সুপার-ফাস্ট ভয়েস প্লেয়ার =================
 RGB_FRAMES = [
     "✨ 🔴 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: প্রজেক্ট আর্কিটেকচার ডিজাইন হচ্ছে...\n[▒▒▒▒▒▒▒▒▒▒] 12% ⚡",
     "⚡ 🟠 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: এন্টারপ্রাইজ লজিক ও অ্যালগরিদম তৈরি হচ্ছে...\n[██▒▒▒▒▒▒▒▒] 34% 🔥",
@@ -361,24 +369,44 @@ async def run_rgb_loading_animation(status_msg, stop_event):
         except Exception:
             break
 
-async def send_voice_audio(update: Update, audio_url: str):
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(audio_url)
-            if resp.status_code == 200:
-                voice_bytes = io.BytesIO(resp.content)
-                voice_bytes.name = "voice.mp3"
-                await update.effective_message.reply_voice(voice=voice_bytes)
-    except Exception as e:
-        logging.error(f"Voice Send Error: {e}")
+async def send_local_voice_note(update: Update, emoji_key: str):
+    """লোকাল ক্যাশ থেকে ১০০% নিশ্চিত ভয়েস নোট সেন্ড করা"""
+    if emoji_key in AUDIO_DATA:
+        filename = AUDIO_DATA[emoji_key][0]
+        filepath = os.path.join(VOICE_DIR, filename)
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            try:
+                with open(filepath, "rb") as voice_file:
+                    await update.effective_message.reply_voice(voice=voice_file)
+            except Exception as e:
+                logging.error(f"Local Voice Send Error: {e}")
 
-def detect_smart_emoji(text: str) -> str:
-    for emoji_char, url in EMOJI_AUDIO_MAP.items():
+def detect_emotion_locally(text: str) -> str:
+    """ইমোজি ছাড়াও সাধারণ টেক্সটের ভাবমূর্তি বুঝে ইমোজি কী রিটার্ন করা"""
+    text_lower = text.lower()
+
+    # ১. সরাসরি ইমোজি চেক
+    for emoji_char in AUDIO_DATA:
         if emoji_char in text:
-            return url
+            return emoji_char
     for ext_emoji, target_emoji in EXTENDED_EMOJI_CLUSTER.items():
         if ext_emoji in text:
-            return EMOJI_AUDIO_MAP.get(target_emoji)
+            return target_emoji
+
+    # ২. টেক্সট সেন্টিমেন্ট এনালাইসিস (ইমোজি ছাড়া কথা বললেও মিলবে)
+    if re.search(r'\b(haha|hehe|hihi|xixi|lol|lmao|rofl|kikiki|হাসি|হাসতেছি|হাসতে হাসতে|মজা পাইলাম)\b', text_lower):
+        return "🤣"
+    if re.search(r'\b(kanna|kosto|mon kharap|chokhe pani|kanchi|buke kosto|কান্না|কষ্ট|চোখে পানি|মন খারাপ|খারাপ লাগতেছে|মন ভালো নেই)\b', text_lower):
+        return "😭"
+    if re.search(r'\b(valobashi|bhalobashi|love you|love u|ummah|umma|kiss|ভালোবাসি|ভালোবাসা|উম্মা|জানু|সোনাটা|অনেক কিউট)\b', text_lower):
+        return "🥰"
+    if re.search(r'\b(ghum|sleep|tired|good night|ঘুম|ঘুমাবো|ঘুম পাচ্ছে|ক্লান্ত|ঘুমাই)\b', text_lower):
+        return "🥱"
+    if re.search(r'\b(rag|gussa|angry|khub rag|মেজাজ খারাপ|রাগ|রেগে গেছি|চুপ কর)\b', text_lower):
+        return "😡"
+    if re.search(r'\b(breakup|dhoka|mon venge|ব্রেকআপ|ধোঁকা|মন ভাঙা|ছ্যাঁকা)\b', text_lower):
+        return "💔"
+
     return None
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -390,24 +418,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user_text = update.effective_message.text.strip()
 
+    # এডমিন ইনবক্সে সরাসরি API Key পেস্ট করলে সেট হবে
     if chat.type == "private" and user.id == ADMIN_ID:
         if (user_text.startswith("AIza") or len(user_text) >= 35) and not user_text.startswith("/"):
             CURRENT_GEMINI_KEY = user_text
             save_api_key(user_text)
             await update.effective_message.reply_text(
                 "✅ **API Key সফলভাবে সেট করা হয়েছে সোনা!** 💖\n"
-                "🚀 Zara AI এখন ফুল এক্টিভ এবং VPS/Termux সব জায়গায় রেডি!",
+                "🚀 Zara AI এখন ফুল এক্টিভ এবং লোকাল ভয়েস ইঞ্জিন রেডি!",
                 parse_mode="Markdown"
             )
             return
 
+    # মডারেশন চেক
     if await handle_moderation(update, context):
         return
 
     bot_username = (await context.bot.get_me()).username
     is_group = chat.type in ["group", "supergroup"]
 
-    if is_group and f"@{bot_username}" not in user_text and not update.message.reply_to_message:
+    # আরিয়ান বা এডমিন মেনশন স্পেশাল ট্রিগার
+    is_asking_admin = bool(re.search(r'\b(admin|এডমিন|এডমিনের|আরিয়ান|আরিয়ান|ariyan|aryan|লিডার|leader)\b', user_text, re.IGNORECASE))
+
+    if is_group and f"@{bot_username}" not in user_text and not update.message.reply_to_message and not is_asking_admin:
         return
 
     clean_user_prompt = user_text.replace(f"@{bot_username}", "").strip()
@@ -417,6 +450,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_display_name = user.first_name if user.first_name else "বাবু"
     full_prompt_with_name = f"[User Name: {user_display_name}]\n{clean_user_prompt}"
 
+    # RGB অ্যানিমেশন শুরু
     status_msg = await update.effective_message.reply_text(
         f"✨ 🔴 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: {user_display_name}-এর জন্য প্রসেসিং শুরু হচ্ছে... 💖"
     )
@@ -433,18 +467,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        matched_audio_url = detect_smart_emoji(clean_user_prompt)
+        # ১. লোকাল ভয়েস ডিটেকশন
+        matched_emoji = detect_emotion_locally(clean_user_prompt)
 
-        if not matched_audio_url:
+        # ২. AI এর ইমোশন ট্যাগ চেক
+        if not matched_emoji:
             emoji_tag_match = re.search(r"\[EMOJI:\s*(.*?)\]", ai_reply)
             if emoji_tag_match:
                 tag_emoji = emoji_tag_match.group(1).strip()
-                if tag_emoji in EMOJI_AUDIO_MAP:
-                    matched_audio_url = EMOJI_AUDIO_MAP[tag_emoji]
+                if tag_emoji in AUDIO_DATA:
+                    matched_emoji = tag_emoji
                 elif tag_emoji in EXTENDED_EMOJI_CLUSTER:
-                    matched_audio_url = EMOJI_AUDIO_MAP.get(EXTENDED_EMOJI_CLUSTER[tag_emoji])
+                    matched_emoji = EXTENDED_EMOJI_CLUSTER[tag_emoji]
 
         ai_reply = re.sub(r"\[EMOJI:\s*.*?\]", "", ai_reply).strip()
+
+        # ৩. কোড ব্লক ডিটেকশন
         code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", ai_reply, re.DOTALL)
 
         if code_blocks:
@@ -474,8 +512,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         else:
             await update.effective_message.reply_text(ai_reply, parse_mode="Markdown")
-            if matched_audio_url:
-                await send_voice_audio(update, matched_audio_url)
+            
+            # ৪. ১০০% নিশ্চিত ক্যাশ থেকে লোকাল ভয়েস সেন্ড করা
+            if matched_emoji:
+                await send_local_voice_note(update, matched_emoji)
 
     except Exception as e:
         stop_event.set()
@@ -486,7 +526,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"Zara AI Error: {e}")
         await update.effective_message.reply_text(f"🥺 উফ্ {user_display_name}! একটু সমস্যা হয়েছে... আরেকবার বলবে প্লিজ? 💖")
 
-# ================= ৮. কমান্ডস =================
+# ================= ৯. কমান্ডস =================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_name = user.first_name or "বাবু"
@@ -494,7 +534,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id == ADMIN_ID:
         if not CURRENT_GEMINI_KEY:
             await update.effective_message.reply_text(
-                f"🔐 **হ্যালো আমার বস {user_name}!** 🥰\n\n"
+                f"🔐 **হ্যালো আমার বস আরিয়ান/এডমিন {user_name}!** 🥰\n\n"
                 "বট নিরাপদে রান হয়েছে, কিন্তু কোনো Gemini API Key সেট করা নেই!\n"
                 "👉 অনুগ্রহ করে আপনার **Google AI Studio API Key**-টি এখানে পাঠিয়ে দিন।",
                 parse_mode="Markdown"
@@ -503,7 +543,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.effective_message.reply_text(
                 f"👑 **স্বাগতম বস {user_name}!** 💖\n"
-                "✅ আপনার API Key অলরেডি সেট করা আছে এবং Zara AI সম্পূর্ণ সক্রিয়!\n"
+                "✅ আপনার API Key সেট করা আছে এবং Zara AI সম্পূর্ণ সক্রিয়!\n"
                 "🔄 নতুন Key দিতে চাইলে শুধু কী-টি সেন্ড করুন বা `/setkey <KEY>` লিখুন।",
                 parse_mode="Markdown"
             )
@@ -511,7 +551,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     welcome_msg = (
         f"Hey {user_name}! 🥰 আমি **Zara AI (জারা)**!\n\n"
-        "💖 রোমান্টিক আড্ডা দিতে আমি সবসময় তোমার সাথে আছি! হাসাহাসি বা কান্নাকাটি করলে কিউট ভয়েসও পাঠাবো! 🎙️✨\n"
+        "💖 আরিয়ান ভাইয়ের পার্সোনাল অ্যাসিস্ট্যান্ট হিসেবে আমি হাজির! আড্ডা দিতে আমি সবসময় রেডি (ইমোশন বা হাসাহাসি করলে কিউট ভয়েসও পাঠাবো)! 🎙️✨\n"
         "💻 আর যেকোনো বড় প্রজেক্ট কোডিং চাইলে ছোট করে বুঝিয়ে সম্পূর্ণ ফাইল পাঠিয়ে দেবো! 🔥\n\n"
         "আমাকে গ্রুপে অ্যাড করে **Admin** বানিয়ে দাও সোনা! 😉✨"
     )
@@ -534,9 +574,13 @@ async def setkey_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(msg="Zara Bot Error:", exc_info=context.error)
 
-# ================= ৯. মেইন =================
+# ================= ১০. মেইন এক্সিকিউশন =================
 def main():
-    print(f"💖 Zara AI Bot ({WORKING_MODEL}) লাইভ হচ্ছে...")
+    print(f"💖 Zara AI Bot ({WORKING_MODEL}) চালু হচ্ছে...")
+    
+    # ব্যাকগ্রাউন্ডে সব অডিও আগে লোকাল স্টোরেজে নামিয়ে নেওয়া
+    asyncio.run(pre_download_all_voices())
+
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).job_queue(None).build()
 
     app.add_handler(CommandHandler("start", start_command))
@@ -544,7 +588,7 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
     app.add_error_handler(error_handler)
 
-    print("🚀 Zara AI এখন সম্পূর্ণ রেডি এবং মেসেজ শোনার জন্য প্রস্তুত!")
+    print("🚀 Zara AI এখন সম্পূর্ণ রেডি এবং লোকাল ভয়েস মেমোরি দিয়ে একটিভ!")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
