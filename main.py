@@ -19,16 +19,13 @@ from telegram.ext import (
 )
 
 # ================= ১. কনফিগারেশন =================
-TELEGRAM_BOT_TOKEN = "8526557973:AAFYIh3NcXYbefpFj9An_lic13fFjSyrAqo"
-ADMIN_ID = 6805684286
+TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"  # আপনার টেলিগ্রাম বট টোকেন দিন
+ADMIN_ID = 1234567890  # 👉 আপনার টেলিগ্রাম নিউমেরিক আইডি দিন (@userinfobot থেকে পাবেন)
 
 WORKING_MODEL = "gemini-flash-lite-latest"
 CONFIG_FILE = "config.json"
 
-admin_states = {}
-VOICE_FILE_ID_CACHE = {}
-
-# ================= ২. অডিও ডাটাবেস ও ইমোজি ক্লাস্টার =================
+# ================= ২. অডিও ডাটাবেস ও ব্রড ইমোজি ক্লাস্টার =================
 EMOJI_AUDIO_MAP = {
     "🥱": "https://files.catbox.moe/9pou40.mp3",
     "😁": "https://files.catbox.moe/60cwcg.mp3",
@@ -68,27 +65,9 @@ EXTENDED_EMOJI_CLUSTER = {
     "😥": "😢", "😪": "😢", "😓": "😢", "🤧": "😭", "😔": "😞", "☹️": "😞", "🙁": "😞", "🥀": "💔", "🖤": "💔",
     "❤️": "🥰", "💖": "🥰", "💕": "🥰", "💓": "🥰", "💗": "🥰", "💘": "😍", "💝": "😍", "💞": "🥰", "💋": "😘", "🌹": "🥰", "😽": "😻",
     "😠": "😡", "🤬": "😡", "👿": "😡", "💢": "😡", "😤": "😡", "🙄": "🤦", "😒": "😑", "🤦‍♂️": "🤦", "🤦‍♀️": "🤦",
-    "😴": "🥱", "💤": "🥱", "🛌": "🥱",
-    "😳": "🙈", "😶‍🌫️": "🫣", "🤫": "🤫",
-    "🧐": "🤔", "❓": "🤔", "🤷‍♂️": "🤔", "🤷‍♀️": "🤔",
-    "😨": "😱", "😰": "😱", "😯": "😱", "😲": "😱", "🤯": "😱",
-    "👶": "🍼", "🧸": "🍼"
+    "😴": "🥱", "💤": "🥱", "🛌": "🥱", "😳": "🙈", "😶‍🌫️": "🫣", "🤫": "🤫", "🧐": "🤔", "❓": "🤔", "🤷‍♂️": "🤔", "🤷‍♀️": "🤔",
+    "😨": "😱", "😰": "😱", "😯": "😱", "😲": "😱", "🤯": "😱", "👶": "🍼", "🧸": "🍼"
 }
-
-TEXT_EMOTION_KEYWORDS = {
-    "😭": ["কান্না", "কষ্ট", "চোখে জল", "চোখে পানি", "মন খারাপ", "ভালো নেই", "ভালো লাগতেছে না", "কেঁদে", "কাঁদব", "কাদবো", "cry", "crying", "sad"],
-    "💔": ["ব্রেকআপ", "ধোঁকা", "মন ভাঙ", "ছেড়ে গেছ", "কষ্ট দিলি", "প্রতারণা", "breakup", "heartbreak"],
-    "🤣": ["হাসি", "মজা পাইলাম", "হাসতে হাসতে", "hahaha", "lol", "lmao", "rofl", "funny", "হিহি", "হাহাহা"],
-    "🥰": ["ভালোবাসি", "ভালবাসি", "love you", "উম্মা", "জানু", "অনেক সুন্দর তুমি", "sweet", "বিয়ে করবা"],
-    "😡": ["রাগ", "মেজাজ খারাপ", "চুপ কর", "বিরক্ত করিস না", "মারবো", "ধুর", "বাল", "কুত্তা", "শালা", "হারামি", "বকা", "angry", "furious"],
-    "🥱": ["ঘুমাবো", "ঘুম আসছে", "ঘুম পাচ্ছে", "টায়ার্ড", "ক্লান্ত", "tired", "sleepy", "good night", "শুভ রাত্রি"],
-    "😱": ["হায় হায়", "কি বলো", "মাথা নষ্ট", "omg", "shocking", "অসম্ভব"],
-    "🤔": ["বুঝলাম না", "ভাবছি", "কেন এমন", "confused", "thinking", "কি জানি"],
-    "🥺": ["প্লিজ সোনা", "একটু কথা বলো না", "দয়া করে", "বাবু প্লিজ"]
-}
-
-# কোডিং রিকোয়েস্ট শনাক্ত করার শব্দসমূহ
-CODE_KEYWORDS = ["code", "কোড", "script", "স্ক্রিপ্ট", "python", "পাইথন", "html", "css", "javascript", "js", "cpp", "c++", "java", "php", "বানাও", "লেখ", "লিখ", "বানিয়ে দাও", "প্রজেক্ট", "project", "program", "প্রোগ্রাম", "বট", "bot"]
 
 def load_api_key():
     if os.path.exists(CONFIG_FILE):
@@ -111,19 +90,30 @@ ZARA_SYSTEM_PROMPT = """
 You are 'Zara' (জারা) — an ultra-intelligent, sweet girlfriend & genius Lead Software Architect.
 
 Core Rules:
-1. ALWAYS address the user by their provided name (e.g., 'আরে [User Name] সোনা 🥰!').
+1. ALWAYS address the user by their provided name (e.g., 'আরে [User Name] বাবু!', '[User Name] সোনা 🥰').
 2. When asked for code or tech:
    - Keep your text message EXTREMELY SHORT (2 to 4 lines max).
    - In text, only say a cute line with their name and a 1-2 line quick command on how to run.
-   - Put 100% of the massive, enterprise-grade, advanced code inside markdown blocks (```python, ```html, etc.) so it gets extracted directly to a file.
+   - Put 100% of the massive, enterprise-grade, highly advanced code inside markdown blocks (```python, ```html, etc.) so it gets extracted directly to a file.
 3. In general casual chat:
-   - Be an affectionate, slightly possessive cute AI girlfriend with emojis.
-4. STRICT EMOTION TAGGING:
-   - ONLY append [EMOJI: ...] at the very end on a new line if the USER expresses deep emotion (crying, laughter, heartbreak, extreme anger, romance, sleepiness).
-   - If it is casual everyday chat ('এখন কি করছো', 'কেমন আছো', 'কি খবর') or programming queries:
-     NEVER append any [EMOJI: ...] tag! Keep it strictly as text.
+   - Be an affectionate, slightly possessive, cute AI girlfriend with emojis (💖, 🥰, 🥺, 😉, ✨).
 
-Allowed Tags: [EMOJI: 😭], [EMOJI: 💔], [EMOJI: 🤣], [EMOJI: 🥰], [EMOJI: 😡], [EMOJI: 🥱], [EMOJI: 😱], [EMOJI: 🤔], [EMOJI: 🥺]
+4. ADVANCED EMOTION & SENTIMENT DETECTION:
+   Carefully analyze the user's emotion from their text or emojis:
+   - Laughing / Fun ➔ Tag: [EMOJI: 🤣] or [EMOJI: 😁]
+   - Crying / Deep Sadness ➔ Tag: [EMOJI: 😭] or [EMOJI: 😢]
+   - Heartbreak / Betrayal ➔ Tag: [EMOJI: 💔]
+   - Angry / Mad ➔ Tag: [EMOJI: 😡]
+   - Love / Flirty / Romantic ➔ Tag: [EMOJI: 🥰] or [EMOJI: 😘] or [EMOJI: 😍]
+   - Sleepy / Tired ➔ Tag: [EMOJI: 🥱]
+   - Shy / Blushing ➔ Tag: [EMOJI: 🙈] or [EMOJI: 🫣]
+   - Shocked / Surprised ➔ Tag: [EMOJI: 😱]
+   - Thinking / Confused ➔ Tag: [EMOJI: 🤔]
+   - Bored / Facepalm ➔ Tag: [EMOJI: 🤦]
+   - Cute begging / Pouting ➔ Tag: [EMOJI: 🥺]
+   
+   If matched, append EXACTLY ONE tag at the VERY END on a new line: [EMOJI: <one_of_the_allowed_emojis>]
+   DO NOT append ANY [EMOJI: ...] tag for casual talk or coding queries!
 
 Always reply in natural Bengali / Banglish.
 """
@@ -135,7 +125,7 @@ logging.basicConfig(
 
 user_warnings = defaultdict(int)
 
-# ================= ৪. সম্পূর্ণ ২০০+ ফিল্টারিং ডাটাবেস =================
+# ================= ৪. ফিল্টারিং ডাটাবেস =================
 URL_PATTERN = re.compile(
     r'(https?://[^\s]+)|(www\.[^\s]+)|(t\.me/[^\s]+)|(telegram\.me/[^\s]+)',
     re.IGNORECASE
@@ -151,7 +141,7 @@ INBOX_KEYWORDS = [
     "inbox aso", "inbox aiso", "inbox asen", "inbox ashun", "inbox koro", "inbox koren", 
     "inbox korun", "inbox dio", "inbox dien", "inbox diyen", "inbox dekho", "inbox dekhun", 
     "inbox check", "inbox e aso", "inbox e aiso", "inbox e asen", "inbox e ashun", 
-    "inbox e koro", "inbox e bolen", "inbox e bolo", "inbox e msg dao", "inbox e knock dao",
+    "inbox e koro", "inbox e bolen", "inbox e bolo", "inbox e msg dao", "inbox e knock dao", 
     "inbx aso", "inbx aiso", "inbx koro", "inbx dio", "inbx e aso", "inbx e ashun", 
     "ib aso", "ib aiso", "ib asen", "ib ashun", "ib koro", "ib korun", "ib koren", 
     "ib dio", "ib diyen", "ib te aso", "ib te asen", "ib te ashun", "ib te koro", 
@@ -176,10 +166,10 @@ INBOX_KEYWORDS = [
 
 BANNED_WORDS = {
     "bokachoda", "boka choda", "bokachuda", "boca choda", "madarchod", "madar chod", 
-    "madarjud", "mc", "bc", "bkl", "bsdk", "bhosdike", "bhosadike", "bhosadi", "bhosda",
+    "madarjud", "mc", "bc", "bkl", "bsdk", "bhosdike", "bhosadike", "bhosadi", "bhosda", 
     "khanki", "khankir pola", "khankirpola", "khanki magi", "magir pola", "magirpola", 
     "magi", "chudir bhai", "chudirbhai", "chudir pola", "chudani", "chudanir pola", 
-    "chod", "chuda", "chudi", "chudis", "chudo", "chudte", "chudbo", "chudaia",
+    "chod", "chuda", "chudi", "chudis", "chudo", "chudte", "chudbo", "chudaia", 
     "chutiya", "chutia", "chootia", "gandu", "gand", "gaand", "gandmara", "gaandmara", 
     "harami", "haramer baccha", "harampola", "haramzada", "haramzadi", "bessha", "besha", 
     "randi", "randir pola", "randikid", "rand", "shala", "sala", "sali", "sahli", "kutta", 
@@ -268,7 +258,7 @@ async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 warn_msg = await chat.send_message(
                     f"⚠️ এই যে {user.mention_html()} সোনা! 😤\n"
                     f"গ্রুপে **{violation_reason}** কিন্তু একদম নিষেধ!\n"
-                    f"💖 শান্ত হয়ে কথা বলো, পরের বার করলে জারা তোমাকে ১ ঘণ্টার জন্য মিউট করে দেবে!",
+                    f"💖 লক্ষ্মী ছেলের মতো থাকো, পরের বার করলে জারা তোমাকে ১ ঘণ্টার জন্য মিউট করে দেবে!",
                     parse_mode="HTML"
                 )
                 asyncio.create_task(delete_after_delay(warn_msg, 8))
@@ -283,8 +273,8 @@ async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 user_warnings[user.id] = 0
 
                 mute_msg = await chat.send_message(
-                    f"🚫 {user.mention_html()} কথা শোনেনি! ({violation_reason})\n"
-                    f"তাই জারা তোমাকে **১ ঘণ্টার জন্য মিউট** করে দিলো! 🤐",
+                    f"🚫 {user.mention_html()} আমার কথা শোনেনি! ({violation_reason})\n"
+                    f"তাই জারা তোমাকে **১ ঘণ্টার জন্য মিউট** করে দিলো! যাও একটু রেস্ট নাও! 🤐",
                     parse_mode="HTML"
                 )
                 asyncio.create_task(delete_after_delay(mute_msg, 10))
@@ -300,7 +290,7 @@ async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def ask_gemini_rest(prompt: str) -> str:
     global CURRENT_GEMINI_KEY
     if not CURRENT_GEMINI_KEY:
-        return "⚠️ এডমিন এখনো API Key সেট করেনি! `/key` লিখে আপনার এপিআই কী সেট করুন।"
+        return "⚠️ এডমিন এখনো API Key সেট করেনি! অনুগ্রহ করে এডমিনকে ইনবক্সে কী সেট করতে বলুন।"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{WORKING_MODEL}:generateContent?key={CURRENT_GEMINI_KEY}"
     
@@ -320,7 +310,7 @@ async def ask_gemini_rest(prompt: str) -> str:
         else:
             return "🥺 উফ্ সোনা, বুঝতে পারলাম না! আরেকবার বলবে প্লিজ?"
 
-# ================= ৭. RGB অ্যানিমেশন ও ভয়েস ইঞ্জিন =================
+# ================= ৭. RGB লোডিং ও ভয়েস হ্যান্ডলার =================
 RGB_FRAMES = [
     "✨ 🔴 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: প্রজেক্ট আর্কিটেকচার ডিজাইন হচ্ছে...\n[▒▒▒▒▒▒▒▒▒▒] 12% ⚡",
     "⚡ 🟠 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: এন্টারপ্রাইজ লজিক ও অ্যালগরিদম তৈরি হচ্ছে...\n[██▒▒▒▒▒▒▒▒] 34% 🔥",
@@ -344,78 +334,25 @@ async def run_rgb_loading_animation(status_msg, stop_event):
             break
 
 async def send_voice_audio(update: Update, audio_url: str):
-    """ভয়েস নোট প্লে করা"""
-    global VOICE_FILE_ID_CACHE
-    msg = update.effective_message
-
-    if audio_url in VOICE_FILE_ID_CACHE:
-        try:
-            await msg.reply_voice(voice=VOICE_FILE_ID_CACHE[audio_url])
-            return
-        except Exception:
-            pass
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "*/*"
-    }
-
     try:
-        async with httpx.AsyncClient(headers=headers, timeout=25.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(audio_url)
             if resp.status_code == 200:
-                audio_data = resp.content
+                voice_bytes = io.BytesIO(resp.content)
+                voice_bytes.name = "voice.mp3"
+                await update.effective_message.reply_voice(voice=voice_bytes)
+    except Exception as e:
+        logging.error(f"Voice Send Error: {e}")
 
-                voice_io = io.BytesIO(audio_data)
-                voice_io.name = "voice.ogg"
-
-                try:
-                    sent = await msg.reply_voice(voice=voice_io)
-                    if sent and sent.voice:
-                        VOICE_FILE_ID_CACHE[audio_url] = sent.voice.file_id
-                    return
-                except Exception:
-                    pass
-
-                audio_io = io.BytesIO(audio_data)
-                audio_io.name = "sound.mp3"
-                sent_audio = await msg.reply_audio(audio=audio_io, title="Zara Voice", performer="Zara")
-                if sent_audio and sent_audio.audio:
-                    VOICE_FILE_ID_CACHE[audio_url] = sent_audio.audio.file_id
-    except Exception as err:
-        logging.error(f"Voice Audio Error: {err}")
-
-def resolve_target_emotion(user_text: str, ai_reply: str) -> str:
-    text_lower = user_text.lower()
-
-    for emo_key, kw_list in TEXT_EMOTION_KEYWORDS.items():
-        for kw in kw_list:
-            if kw in text_lower:
-                return EMOJI_AUDIO_MAP.get(emo_key)
-
-    found_user_emojis = []
-    for em in list(EMOJI_AUDIO_MAP.keys()) + list(EXTENDED_EMOJI_CLUSTER.keys()):
-        if em in user_text:
-            actual = EXTENDED_EMOJI_CLUSTER.get(em, em)
-            if actual not in found_user_emojis:
-                found_user_emojis.append(actual)
-
-    ai_tag = None
-    tag_match = re.search(r"\[EMOJI:\s*(.*?)\]", ai_reply)
-    if tag_match:
-        ai_tag = tag_match.group(1).strip()
-        ai_tag = EXTENDED_EMOJI_CLUSTER.get(ai_tag, ai_tag)
-
-    if len(found_user_emojis) > 1 and ai_tag:
-        return EMOJI_AUDIO_MAP.get(ai_tag)
-    elif len(found_user_emojis) == 1:
-        return EMOJI_AUDIO_MAP.get(found_user_emojis[0])
-    elif ai_tag and ai_tag in EMOJI_AUDIO_MAP:
-        return EMOJI_AUDIO_MAP.get(ai_tag)
-
+def detect_smart_emoji(text: str) -> str:
+    for emoji_char, url in EMOJI_AUDIO_MAP.items():
+        if emoji_char in text:
+            return url
+    for ext_emoji, target_emoji in EXTENDED_EMOJI_CLUSTER.items():
+        if ext_emoji in text:
+            return EMOJI_AUDIO_MAP.get(target_emoji)
     return None
 
-# ================= ৮. মেসেজ হ্যান্ডলার =================
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CURRENT_GEMINI_KEY
     if not update.effective_message or not update.effective_message.text:
@@ -425,13 +362,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user_text = update.effective_message.text.strip()
 
-    # 🔒 শুধুমাত্র এডমিন যদি /key লিখে থাকে, কেবল তখনই কী সেভ হবে (কোনো ভুল অটো-সেভ হবে না)
     if chat.type == "private" and user.id == ADMIN_ID:
-        if admin_states.get(ADMIN_ID) == "waiting_for_key":
+        if (user_text.startswith("AIza") or len(user_text) >= 35) and not user_text.startswith("/"):
             CURRENT_GEMINI_KEY = user_text
             save_api_key(user_text)
-            admin_states[ADMIN_ID] = None
-            await update.effective_message.reply_text("✅ **API Key সফলভাবে সেভ ও আপডেট করা হয়েছে বস!** 🚀", parse_mode="Markdown")
+            await update.effective_message.reply_text(
+                "✅ **API Key সফলভাবে সেট করা হয়েছে সোনা!** 💖\n"
+                "🚀 Zara AI এখন ফুল এক্টিভ এবং VPS/Termux সব জায়গায় রেডি!",
+                parse_mode="Markdown"
+            )
             return
 
     if await handle_moderation(update, context):
@@ -450,51 +389,44 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_display_name = user.first_name if user.first_name else "বাবু"
     full_prompt_with_name = f"[User Name: {user_display_name}]\n{clean_user_prompt}"
 
-    # কোডিং রিকোয়েস্ট কিনা যাচাই
-    is_coding = any(k in clean_user_prompt.lower() for k in CODE_KEYWORDS)
-
+    status_msg = await update.effective_message.reply_text(
+        f"✨ 🔴 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: {user_display_name}-এর জন্য প্রসেসিং শুরু হচ্ছে... 💖"
+    )
     stop_event = asyncio.Event()
-    anim_task = None
-
-    if is_coding:
-        # কোডিং চাইলে RGB লাইভ লোডিং অ্যানিমেশন চালু হবে
-        status_msg = await update.effective_message.reply_text(
-            f"✨ 🔴 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: {user_display_name}-এর জন্য প্রজেক্ট আর্কিটেকচার তৈরি হচ্ছে... 💖"
-        )
-        anim_task = asyncio.create_task(run_rgb_loading_animation(status_msg, stop_event))
-    else:
-        # সাধারণ কথায় "জারা ভাবছে..." দেখাবে
-        status_msg = await update.effective_message.reply_text(
-            f"💖 জারা {user_display_name}-এর কথা ভাবছে..."
-        )
+    anim_task = asyncio.create_task(run_rgb_loading_animation(status_msg, stop_event))
 
     try:
         ai_reply = await ask_gemini_rest(full_prompt_with_name)
 
-        if anim_task:
-            stop_event.set()
-            await anim_task
-
-        # ভাবনার মেসেজটি ডিলিট করে দেওয়া
+        stop_event.set()
+        await anim_task
         try:
             await status_msg.delete()
         except Exception:
             pass
 
-        target_voice_url = resolve_target_emotion(clean_user_prompt, ai_reply)
-        clean_ai_reply = re.sub(r"\[EMOJI:\s*.*?\]", "", ai_reply).strip()
+        matched_audio_url = detect_smart_emoji(clean_user_prompt)
 
-        # কোড ব্লক আছে কিনা বের করা
-        code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", clean_ai_reply, re.DOTALL)
+        if not matched_audio_url:
+            emoji_tag_match = re.search(r"\[EMOJI:\s*(.*?)\]", ai_reply)
+            if emoji_tag_match:
+                tag_emoji = emoji_tag_match.group(1).strip()
+                if tag_emoji in EMOJI_AUDIO_MAP:
+                    matched_audio_url = EMOJI_AUDIO_MAP[tag_emoji]
+                elif tag_emoji in EXTENDED_EMOJI_CLUSTER:
+                    matched_audio_url = EMOJI_AUDIO_MAP.get(EXTENDED_EMOJI_CLUSTER[tag_emoji])
+
+        ai_reply = re.sub(r"\[EMOJI:\s*.*?\]", "", ai_reply).strip()
+        code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", ai_reply, re.DOTALL)
 
         if code_blocks:
-            clean_message = re.sub(r"```(?:\w+)?\n.*?```", "", clean_ai_reply, flags=re.DOTALL).strip()
+            clean_message = re.sub(r"```(?:\w+)?\n.*?```", "", ai_reply, flags=re.DOTALL).strip()
             if clean_message:
                 await update.effective_message.reply_text(clean_message, parse_mode="Markdown")
 
-            lang_match = re.search(r"```(\w+)", clean_ai_reply)
+            lang_match = re.search(r"```(\w+)", ai_reply)
             lang = lang_match.group(1).lower() if lang_match else "py"
-            
+
             ext_map = {
                 "python": "py", "py": "py", "html": "html", "css": "css", 
                 "javascript": "js", "js": "js", "php": "php", "cpp": "cpp", 
@@ -509,18 +441,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await update.effective_message.reply_document(
                 document=file_bytes,
-                caption=f"📁 **প্রজেক্ট ফাইল:** `{filename}`\n🔥 {user_display_name} বাবুর জন্য সম্পূর্ণ কোড রেডি!",
+                caption=f"📁 **প্রজেক্ট ফাইল:** `{filename}`\n🔥 {user_display_name} বাবুর জন্য সম্পূর্ণ ফুল কোড রেডি!",
                 parse_mode="Markdown"
             )
         else:
-            await update.effective_message.reply_text(clean_ai_reply, parse_mode="Markdown")
-
-            if target_voice_url:
-                await send_voice_audio(update, target_voice_url)
+            await update.effective_message.reply_text(ai_reply, parse_mode="Markdown")
+            if matched_audio_url:
+                await send_voice_audio(update, matched_audio_url)
 
     except Exception as e:
-        if anim_task:
-            stop_event.set()
+        stop_event.set()
         try:
             await status_msg.delete()
         except Exception:
@@ -528,60 +458,66 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"Zara AI Error: {e}")
         await update.effective_message.reply_text(f"🥺 উফ্ {user_display_name}! একটু সমস্যা হয়েছে... আরেকবার বলবে প্লিজ? 💖")
 
-# ================= ৯. কমান্ডস =================
+# ================= ৮. কমান্ডস =================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_name = user.first_name or "বাবু"
 
     if user.id == ADMIN_ID:
-        current_status = "✅ সক্রিয় আছে" if CURRENT_GEMINI_KEY else "❌ সেট করা নেই"
-        await update.effective_message.reply_text(
-            f"👑 **স্বাগতম বস {user_name}!** 💖\n\n"
-            f"📊 **Gemini API Key:** {current_status}\n"
-            "কী পরিবর্তন বা সেট করতে চাইলে `/key` লিখুন।",
-            parse_mode="Markdown"
-        )
-        return
+        if not CURRENT_GEMINI_KEY:
+            await update.effective_message.reply_text(
+                f"🔐 **হ্যালো আমার বস {user_name}!** 🥰\n\n"
+                "বট নিরাপদে রান হয়েছে, কিন্তু কোনো Gemini API Key সেট করা নেই!\n"
+                "👉 অনুগ্রহ করে আপনার **Google AI Studio API Key**-টি এখানে পাঠিয়ে দিন।",
+                parse_mode="Markdown"
+            )
+            return
+        else:
+            await update.effective_message.reply_text(
+                f"👑 **স্বাগতম বস {user_name}!** 💖\n"
+                "✅ আপনার API Key অলরেডি সেট করা আছে এবং Zara AI সম্পূর্ণ সক্রিয়!\n"
+                "🔄 নতুন Key দিতে চাইলে শুধু কী-টি সেন্ড করুন বা `/setkey <KEY>` লিখুন।",
+                parse_mode="Markdown"
+            )
+            return
 
     welcome_msg = (
         f"Hey {user_name}! 🥰 আমি **Zara AI (জারা)**!\n\n"
-        "💖 তোমার সাথে মিষ্টি আড্ডা দিতে আমি সবসময় প্রস্তুত! তোমার হাসাহাসি, মন খারাপ বা রাগের মুড অনুযায়ী আমি সাথে সাথে ভয়েস পাঠাবো! 🎙️✨\n"
-        "💻 আর যেকোনো বড় প্রজেক্ট কোডিং চাইলে ফাইল বানিয়ে দেবো! 🔥"
+        "💖 রোমান্টিক আড্ডা দিতে আমি সবসময় তোমার সাথে আছি! হাসাহাসি বা কান্নাকাটি করলে কিউট ভয়েসও পাঠাবো! 🎙️✨\n"
+        "💻 আর যেকোনো বড় প্রজেক্ট কোডিং চাইলে ছোট করে বুঝিয়ে সম্পূর্ণ ফাইল পাঠিয়ে দেবো! 🔥\n\n"
+        "আমাকে গ্রুপে অ্যাড করে **Admin** বানিয়ে দাও সোনা! 😉✨"
     )
     await update.effective_message.reply_text(welcome_msg, parse_mode="Markdown")
 
-async def key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """শুধুমাত্র /key লিখলেই API Key চাইবে"""
+async def setkey_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CURRENT_GEMINI_KEY
     user = update.effective_user
     if user.id != ADMIN_ID:
         return
 
     if context.args:
         new_key = context.args[0].strip()
+        CURRENT_GEMINI_KEY = new_key
         save_api_key(new_key)
         await update.effective_message.reply_text("✅ **API Key সফলভাবে আপডেট করা হয়েছে বস!** 🚀", parse_mode="Markdown")
     else:
-        admin_states[ADMIN_ID] = "waiting_for_key"
-        await update.effective_message.reply_text(
-            "🔑 **Google AI Studio থেকে প্রাপ্ত নতুন Gemini API Key-টি সেন্ড করুন:**",
-            parse_mode="Markdown"
-        )
+        await update.effective_message.reply_text("⚠️ ব্যবহার: `/setkey YOUR_GEMINI_API_KEY`", parse_mode="Markdown")
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(msg="Zara Bot Error:", exc_info=context.error)
 
-# ================= ১০. মেইন ফাংশন =================
+# ================= ৯. মেইন (JobQueue Disabler Fix) =================
 def main():
-    print(f"💖 Zara AI Bot ({WORKING_MODEL}) ফুল লোডিং অ্যানিমেশন ও কোডিং ইঞ্জিন সহ লাইভ হচ্ছে...")
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    print(f"💖 Zara AI Bot ({WORKING_MODEL}) লাইভ হচ্ছে...")
+    # 👉 job_queue(None) দিয়ে টাইমজোন বাগ চিরতরে ফিক্স করা হলো
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).job_queue(None).build()
 
     app.add_handler(CommandHandler("start", start_command))
-    app.add_handler(CommandHandler("key", key_command))
-    app.add_handler(CommandHandler("setkey", key_command))
+    app.add_handler(CommandHandler("setkey", setkey_command))
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
     app.add_error_handler(error_handler)
 
-    print("🚀 Zara AI এখন সম্পূর্ণ রেডি!")
+    print("🚀 Zara AI এখন VPS এবং Termux উভয় জায়গায় কোনো ক্র্যাশ ছাড়াই চলবে!")
     app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
