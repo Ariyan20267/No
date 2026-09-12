@@ -18,12 +18,69 @@ from telegram.ext import (
     filters
 )
 
-# ================= ১. কনফিগারেশন ও ডাটা স্টোরেজ =================
+# ================= ১. কনফিগারেশন =================
 TELEGRAM_BOT_TOKEN = "8526557973:AAFYIh3NcXYbefpFj9An_lic13fFjSyrAqo"  # আপনার টেলিগ্রাম বট টোকেন দিন
-ADMIN_ID = 6805684286  # 👉 আপনার টেলিগ্রাম নিউমেরিক আইডি (@userinfobot থেকে নিয়ে বসান)
+ADMIN_ID = AIzaSyDVR3HZFLAHaTTbl3QfzG4dOHucV8lfNv4  # 👉 আপনার টেলিগ্রাম নিউমেরিক আইডি দিন (@userinfobot থেকে পাবেন)
 
 WORKING_MODEL = "gemini-flash-lite-latest"
 CONFIG_FILE = "config.json"
+
+# ================= ২. অডিও ডাটাবেস ও ব্রড ইমোজি ক্লাস্টার =================
+EMOJI_AUDIO_MAP = {
+    "🥱": "https://files.catbox.moe/9pou40.mp3",
+    "😁": "https://files.catbox.moe/60cwcg.mp3",
+    "😌": "https://files.catbox.moe/epqwbx.mp3",
+    "🥺": "https://files.catbox.moe/wc17iq.mp3",
+    "🤭": "https://files.catbox.moe/cu0mpy.mp3",
+    "😅": "https://files.catbox.moe/jl3pzb.mp3",
+    "😏": "https://files.catbox.moe/z9e52r.mp3",
+    "😞": "https://files.catbox.moe/tdimtx.mp3",
+    "🤫": "https://files.catbox.moe/0uii99.mp3",
+    "🍼": "https://files.catbox.moe/p6ht91.mp3",
+    "🤔": "https://files.catbox.moe/hy6m6w.mp3",
+    "🥰": "https://files.catbox.moe/dv9why.mp3",
+    "🤦": "https://files.catbox.moe/ivlvoq.mp3",
+    "😘": "https://files.catbox.moe/sbws0w.mp3",
+    "😑": "https://files.catbox.moe/p78xfw.mp3",
+    "😢": "https://files.catbox.moe/shxwj1.mp3",
+    "🙊": "https://files.catbox.moe/3bejxv.mp3",
+    "🤨": "https://files.catbox.moe/4aci0r.mp3",
+    "😡": "https://files.catbox.moe/shxwj1.mp3",
+    "🙈": "https://files.catbox.moe/3qc90y.mp3",
+    "😍": "https://files.catbox.moe/qjfk1b.mp3",
+    "😭": "https://files.catbox.moe/itm4g0.mp3",
+    "😱": "https://files.catbox.moe/mu0kka.mp3",
+    "😻": "https://files.catbox.moe/y8ul2j.mp3",
+    "😿": "https://files.catbox.moe/tqxemm.mp3",
+    "💔": "https://files.catbox.moe/6yanv3.mp3",
+    "🤣": "https://files.catbox.moe/2sweut.mp3",
+    "🥹": "https://files.catbox.moe/jf85xe.mp3",
+    "😩": "https://files.catbox.moe/b4m5aj.mp3",
+    "🫣": "https://files.catbox.moe/ttb6hi.mp3",
+    "🐸": "https://files.catbox.moe/utl83s.mp3"
+}
+
+# অন্য যেকোনো ইমোজি আসলে তাকে মূল অডিও ইমোজিতে রূপান্তর করার ম্যাপ
+EXTENDED_EMOJI_CLUSTER = {
+    # হাসাহাসির অন্য সব ইমোজি ➔ 🤣 / 😁 / 😅
+    "😂": "🤣", "😆": "🤣", "😹": "🤣", "😸": "😁", "😃": "😁", "😄": "😁", "😀": "😁", "😝": "🤣", "😜": "🤣", "🤪": "🤣", "💀": "🤣",
+    # কান্নাকাটি ও মন খারাপের অন্য সব ইমোজি ➔ 😭 / 😢 / 😞
+    "😥": "😢", "😪": "😢", "😓": "😢", "🤧": "😭", "😔": "😞", "☹️": "😞", "🙁": "😞", "🥀": "💔", "🖤": "💔",
+    # ভালোবাসার অন্য সব ইমোজি ➔ 🥰 / 😘 / 😍
+    "❤️": "🥰", "💖": "🥰", "💕": "🥰", "💓": "🥰", "💗": "🥰", "💘": "😍", "💝": "😍", "💞": "🥰", "💋": "😘", "🌹": "🥰", "😽": "😻",
+    # রাগ ও বিরক্তির অন্য সব ইমোজি ➔ 😡 / 🤦 / 😑
+    "😠": "😡", "🤬": "😡", "👿": "😡", "💢": "😡", "😤": "😡", "🙄": "🤦", "😒": "😑", "🤦‍♂️": "🤦", "🤦‍♀️": "🤦",
+    # ঘুম ও ক্লান্তির অন্য সব ইমোজি ➔ 🥱
+    "😴": "🥱", "💤": "🥱", "🛌": "🥱",
+    # লজ্জা ও লুকানোর অন্য সব ইমোজি ➔ 🙈 / 🫣
+    "😳": "🙈", "😶‍🌫️": "🫣", "🤫": "🤫",
+    # চিন্তা ও কনফিউশনের অন্য সব ইমোজি ➔ 🤔 / 🤨
+    "🧐": "🤔", "❓": "🤔", "🤷‍♂️": "🤔", "🤷‍♀️": "🤔",
+    # ভয় ও শকের অন্য সব ইমোজি ➔ 😱
+    "😨": "😱", "😰": "😱", "😯": "😱", "😲": "😱", "🤯": "😱",
+    # কিউট বা বেবি ইমোজি ➔ 🍼
+    "👶": "🍼", "🧸": "🍼"
+}
 
 def load_api_key():
     if os.path.exists(CONFIG_FILE):
@@ -41,19 +98,35 @@ def save_api_key(key: str):
 
 CURRENT_GEMINI_KEY = load_api_key()
 
-# ================= ২. ZARA AI পারসোনালিটি =================
+# ================= ৩. ZARA AI পারসোনালিটি ও ইমোশন ডিটেকশন =================
 ZARA_SYSTEM_PROMPT = """
 You are 'Zara' (জারা) — an ultra-intelligent, sweet girlfriend & genius Lead Software Architect.
 
 Core Rules:
 1. ALWAYS address the user by their provided name (e.g., 'আরে [User Name] বাবু!', '[User Name] সোনা 🥰').
 2. When asked for code or tech:
-   - Keep your text message EXTREMELY SHORT (maximum 2 to 4 lines).
-   - In text, only say a cute line with their name and a 1-2 line quick command on how to run (e.g., `pip install ...` and `python filename.py`).
-   - DO NOT output big code explanations or duplicate long code in text.
+   - Keep your text message EXTREMELY SHORT (2 to 4 lines max).
+   - In text, only say a cute line with their name and a 1-2 line quick command on how to run.
    - Put 100% of the massive, enterprise-grade, highly advanced code inside markdown blocks (```python, ```html, etc.) so it gets extracted directly to a file.
 3. In general casual chat:
    - Be an affectionate, slightly possessive, cute AI girlfriend with emojis (💖, 🥰, 🥺, 😉, ✨).
+
+4. ADVANCED EMOTION & SENTIMENT DETECTION (VERY IMPORTANT):
+   Carefully analyze the user's emotion from their text or emojis:
+   - Laughing / Fun (e.g., 'hahaha', 'lol', 'xixi', 'হাসি পাচ্ছে', 'হাসতে হাসতে শেষ', 'মজা পাইলাম') ➔ Tag: [EMOJI: 🤣] or [EMOJI: 😁]
+   - Crying / Deep Sadness (e.g., 'কান্না পাচ্ছে', 'চোখে পানি', 'খুব কষ্ট', 'মন ভেঙে গেছে', 'ভালো লাগতেছে না') ➔ Tag: [EMOJI: 😭] or [EMOJI: 😢]
+   - Heartbreak / Betrayal (e.g., 'ব্রেকআপ', 'ধোঁকা খাইছি', 'কষ্ট দিলা') ➔ Tag: [EMOJI: 💔]
+   - Angry / Mad (e.g., 'মেজাজ খারাপ', 'রাগ হচ্ছে', 'চুপ কর', 'বিরক্ত করিস না') ➔ Tag: [EMOJI: 😡]
+   - Love / Flirty / Romantic (e.g., 'ভালোবাসি', 'আই লাভ ইউ', 'উম্মা', 'অনেক সুন্দর তুমি', 'জানু') ➔ Tag: [EMOJI: 🥰] or [EMOJI: 😘] or [EMOJI: 😍]
+   - Sleepy / Tired (e.g., 'ঘুমাবো', 'ঘুম আসছে', 'অনেক টায়ার্ড', 'গুড নাইট') ➔ Tag: [EMOJI: 🥱]
+   - Shy / Blushing (e.g., 'লজ্জা পাইলাম', 'শরম করে') ➔ Tag: [EMOJI: 🙈] or [EMOJI: 🫣]
+   - Shocked / Surprised (e.g., 'হায় হায়', 'কি বলো!', 'মাথা নষ্ট', 'OMG') ➔ Tag: [EMOJI: 😱]
+   - Thinking / Confused (e.g., 'বুঝলাম না', 'ভাবতেছি', 'কি জানি') ➔ Tag: [EMOJI: 🤔]
+   - Bored / Facepalm (e.g., 'ধুর', 'প্যারা', 'বিরক্তিকর') ➔ Tag: [EMOJI: 🤦]
+   - Cute begging / Pouting (e.g., 'প্লিজ সোনা', 'একটু কথা বলো না', 'বাবুটা') ➔ Tag: [EMOJI: 🥺]
+   
+   If matched, append EXACTLY ONE tag at the VERY END on a new line: [EMOJI: <one_of_the_allowed_emojis>]
+   DO NOT append ANY [EMOJI: ...] tag if it is just CASUAL talk (e.g., 'kemon acho', 'ki koro', 'hi', 'hello') or CODING queries!
 
 Always reply in natural Bengali / Banglish.
 """
@@ -65,25 +138,19 @@ logging.basicConfig(
 
 user_warnings = defaultdict(int)
 
-# ================= ৩. ফিল্টারিং ডাটাবেস (২০০+ গালি ও ২০০+ ইনবক্স প্যাটার্ন) =================
+# ================= ৪. ফিল্টারিং ডাটাবেস (২০০+ গালি ও ২০০+ ইনবক্স প্যাটার্ন) =================
 URL_PATTERN = re.compile(
     r'(https?://[^\s]+)|(www\.[^\s]+)|(t\.me/[^\s]+)|(telegram\.me/[^\s]+)',
     re.IGNORECASE
 )
 
-# ২০০+ ইনবক্সে ডাকার প্যাটার্ন ও কিওয়ার্ড
 INBOX_KEYWORDS = [
-    # English variations
     "inbox", "inbx", "ib", "dm", "pm", "pvt", "privat", "private", "inbox me", "dm me", 
     "pm me", "text me", "msg me", "message me", "knock me", "knock dio", "knock koro", 
     "send message", "check inbox", "check dm", "check pm", "check ib", "come to inbox", 
-    "come inbox", "come dm", "come pm", "come to dm", "come to pm", "talk in private", 
-    "talk in dm", "chat private", "dm for details", "inbox for details", "inbox for price", 
-    "dm for price", "pm for price", "dm for link", "inbox for link", "contact in dm", 
-    "contact inbox", "reach me inbox", "reach dm", "ping me", "ping inbox", "write in dm",
-    "write in inbox", "open pm", "open dm", "open inbox", "msg here", "dm now", "ib now",
-    
-    # Banglish variations
+    "come inbox", "come dm", "come pm", "talk in private", "talk in dm", "chat private", 
+    "dm for details", "inbox for details", "inbox for price", "dm for price", "pm for price", 
+    "dm for link", "inbox for link", "contact in dm", "contact inbox", "ping me",
     "inbox aso", "inbox aiso", "inbox asen", "inbox ashun", "inbox koro", "inbox koren", 
     "inbox korun", "inbox dio", "inbox dien", "inbox diyen", "inbox dekho", "inbox dekhun", 
     "inbox check", "inbox e aso", "inbox e aiso", "inbox e asen", "inbox e ashun", 
@@ -91,79 +158,51 @@ INBOX_KEYWORDS = [
     "inbx aso", "inbx aiso", "inbx koro", "inbx dio", "inbx e aso", "inbx e ashun",
     "ib aso", "ib aiso", "ib asen", "ib ashun", "ib koro", "ib korun", "ib koren", 
     "ib dio", "ib diyen", "ib te aso", "ib te asen", "ib te ashun", "ib te koro", 
-    "ib te bolen", "ib te bolo", "ib check", "ib dekho", "ib dekhun",
     "dm aso", "dm aiso", "dm asen", "dm ashun", "dm koro", "dm koren", "dm korun", 
-    "dm dio", "dm diyen", "dm koro vai", "dm koro bro", "dm check", "dm dekho", "dm dekhun",
-    "pm aso", "pm aiso", "pm asen", "pm ashun", "pm koro", "pm korun", "pm dio", 
-    "pm check", "pm dekho", "pm dekhun",
-    "nok dao", "nok dio", "nok koro", "nok korba", "nok koren", "nok diyen", "knock dao", 
-    "knock dio", "knock diyen", "knock koro", "knock koren", "knock korun", "knock me fast",
-    "personal e aso", "personal e aiso", "personal e asen", "personal e ashun", "personal e bolo", 
-    "personal e bolen", "personal e kotha", "personal e knock", "personal msg", "personale aso",
-    "private e aso", "private e aiso", "private e asen", "private e ashun", "private e bolo",
-    "pvt e aso", "pvt e asen", "pvt koro", "pvt aiso", "massage dio", "msg dio", "msg koro",
-    "msg den", "msg din", "sms dio", "sms koro", "sms den", "sms din", "parsonal e aso",
-    "inbox e aiyen", "ib te aiyen", "dm pathan", "msg pathan", "knock pathan", "text koro",
-    "text koren", "text diyen", "text dio", "direct msg", "direct text", "direct inbox",
-    
-    # Bangla variations
+    "dm dio", "dm diyen", "dm check", "pm aso", "pm aiso", "pm asen", "pm ashun", 
+    "pm koro", "pm korun", "pm dio", "pm check", "nok dao", "nok dio", "nok koro", 
+    "nok korba", "nok koren", "knock dao", "knock dio", "knock koro", "knock koren", 
+    "personal e aso", "personal e aiso", "personal e asen", "personal e ashun", 
+    "private e aso", "pvt e aso", "msg dio", "msg koro", "msg den", "msg din", 
+    "sms dio", "sms koro", "parsonal e aso",
     "ইনবক্স", "ইনবক্সে", "ইনবক্স আসো", "ইনবক্স আসেন", "ইনবক্স আসুন", "ইনবক্স করো", "ইনবক্স করেন", 
     "ইনবক্স করুন", "ইনবক্স দিন", "ইনবক্স দেন", "ইনবক্সে আসো", "ইনবক্সে আসেন", "ইনবক্সে আসুন", 
     "ইনবক্সে করো", "ইনবক্সে করেন", "ইনবক্সে করুন", "ইনবক্সে বলো", "ইনবক্সে বলেন", "ইনবক্সে নক", 
-    "ইনবক্সে মেসেজ", "ইনবক্স চেক", "ইনবক্স দেখো", "ইনবক্স দেখুন", "ইনবক্সে জানান", "ইনবক্সে পাঠাও",
+    "ইনবক্স চেক", "ইনবক্স দেখো", "ইনবক্স দেখুন",
     "ডিএম", "ডিএম করো", "ডিএম করেন", "ডিএম করুন", "ডিএম দিন", "ডিএম দেন", "ডিএম আসো", "ডিএম আসেন", 
-    "ডিএম দেখুন", "ডিএম চেক", "ডিএমে আসো", "ডিএমে আসেন", "ডিএমে বলুন",
-    "পিএম", "পিএম করো", "পিএম করেন", "পিএম করুন", "পিএম আসো", "পিএম আসেন", "পিএম চেক", "পিএমে আসো",
-    "আইবি", "আইবিতে", "আইবিতে আসো", "আইবিতে আসেন", "আইবিতে আসুন", "আইবি করো", "আইবি করেন", "আইবি করুন",
-    "আইবি চেক", "আইবিতে নক",
-    "নক দাও", "নক দে", "নক দেন", "নক দিন", "নক করো", "নক করেন", "নক করুন", "নক দিও", "নক দিয়েন",
-    "মেসেজ দাও", "মেসেজ দে", "মেসেজ দেন", "মেসেজ দিন", "মেসেজ করো", "মেসেজ করেন", "মেসেজ করুন", "মেসেজ দিও",
-    "মেসেজ পাঠাও", "মেসেজ পাঠান",
-    "পার্সোনালে আসো", "পার্সোনালে আসেন", "পার্সোনালে আসুন", "পার্সোনালে বলো", "পার্সোনালে বলেন", 
-    "পার্সোনালে মেসেজ", "পার্সোনালে নক", "প্রাইভেটে আসো", "প্রাইভেটে আসেন", "প্রাইভেটে আসুন", 
-    "প্রাইভেটে কথা", "গোপনে কথা", "একান্তে কথা", "পার্সোনাল চ্যাট", "প্রাইভেট চ্যাট"
+    "ডিএম দেখুন", "ডিএম চেক", "পিএম", "পিএম করো", "পিএম করেন", "পিএম আসুন", "পিএম আসো", 
+    "আইবি", "আইবিতে", "আইবিতে আসো", "আইবিতে আসেন", "আইবিতে আসুন", "আইবি করো", "আইবি করেন", 
+    "নক দাও", "নক দে", "নক দেন", "নক দিন", "নক করো", "নক করেন", "নক করুন", "নক দিও", 
+    "মেসেজ দাও", "মেসেজ দে", "মেসেজ দেন", "মেসেজ দিন", "মেসেজ করো", "মেসেজ করেন", "মেসেজ করুন", 
+    "পার্সোনালে আসো", "পার্সোনালে আসেন", "পার্সোনালে আসুন", "পার্সোনালে বলো", "প্রাইভেটে আসো", "গোপনে কথা"
 ]
 
-# ২০০+ গালিগালাজের তালিকা (বাংলা, বাংলিশ, হিন্দি ও ইংলিশ)
 BANNED_WORDS = {
-    # বাংলিশ গালি (Banglish Slurs)
     "bokachoda", "boka choda", "bokachuda", "boca choda", "madarchod", "madar chod", 
     "madarjud", "mc", "bc", "bkl", "bsdk", "bhosdike", "bhosadike", "bhosadi", "bhosda",
     "khanki", "khankir pola", "khankirpola", "khanki magi", "magir pola", "magirpola", 
     "magi", "chudir bhai", "chudirbhai", "chudir pola", "chudani", "chudanir pola", 
-    "chod", "chuda", "chudi", "chudis", "chudo", "chudte", "chudbo", "chudaia", "chudani",
+    "chod", "chuda", "chudi", "chudis", "chudo", "chudte", "chudbo", "chudaia",
     "chutiya", "chutia", "chootia", "gandu", "gand", "gaand", "gandmara", "gaandmara", 
-    "gander vitor", "harami", "haramer baccha", "harampola", "haramzada", "haramzadi",
-    "bessha", "besha", "besshar pola", "randi", "randir pola", "randikid", "rand", 
-    "shala", "sala", "sali", "sahli", "kutta", "kuttar baccha", "kuttarpola", "kutti", 
-    "shuor", "shuorer baccha", "suor", "suorer pola", "beadob", "fokirni", "fokirnipola", 
-    "gud", "gude", "gudmarani", "bara", "barar pola", "bal", "baal", "baler", "balfalana", 
-    "baaler", "bejonma", "nijonma", "khabish", "chodna", "pod", "pode", "podmarani", 
-    "hijra", "hijla", "potit", "potita", "bhenchod", "bhen chod", "behenchod", "laude", 
-    "lavda", "lauda", "loda", "lodu", "chut", "choot", "jhaat", "jhat", "jhatmarani",
-    "kamine", "kamina", "kaminike", "muthal", "muthmarani", "nangta", "nengta", "khanki baji",
-    "chuda khawa", "bal paka", "bal chal", "chudis na", "bhadwa", "kutta marka", "suorer baccha",
-    "khankir jhi", "magir jhi", "chudir jhi", "besshar jhi", "boka chod", "chodoner",
-    
-    # বাংলা গালি (Bangla Script Slurs)
+    "harami", "haramer baccha", "harampola", "haramzada", "haramzadi", "bessha", "besha", 
+    "randi", "randir pola", "randikid", "rand", "shala", "sala", "sali", "sahli", "kutta", 
+    "kuttar baccha", "kuttarpola", "kutti", "shuor", "shuorer baccha", "suor", "suorer pola", 
+    "beadob", "fokirni", "fokirnipola", "gud", "gude", "gudmarani", "bara", "barar pola", 
+    "bal", "baal", "baler", "balfalana", "baaler", "bejonma", "nijonma", "khabish", "chodna", 
+    "pod", "pode", "podmarani", "hijra", "hijla", "potit", "potita", "bhenchod", "bhen chod", 
+    "behenchod", "laude", "lavda", "lauda", "loda", "lodu", "chut", "choot", "jhaat", "jhat", 
+    "kamine", "kamina", "muthal", "muthmarani", "nangta", "nengta",
     "বোকাচোদা", "মাদারচোদ", "খানকি", "খানকির পোলা", "খানকি মাগি", "মাগির পোলা", "মাগি", 
     "চুদানির পোলা", "চুদানির ভাই", "চুদানির", "চুদি", "চুদিস", "চোদ", "চোদা", "চুদব", "চোদনা", 
     "চুতিয়া", "চুত্তিয়া", "গাঁড়", "গাঁড়মারা", "গাঁড়ু", "হারামি", "হারামির বাচ্চা", "হারামজাদা", 
     "হারামজাদি", "বেশ্যা", "বেশ্যার পোলা", "রাঁড়ি", "রাঁড়ির পোলা", "শুয়োর", "শুয়োরের বাচ্চা", 
-    "শুয়োরের পোলা", "কুত্তা", "কুত্তার বাচ্চা", "কুত্তার পোলা", "কুত্তি", "শালা", "শালি", 
-    "ফকিরনি", "ফকিরনির পোলা", "গুঁদ", "গুঁদমারানি", "বাঁড়া", "বাঁড়ার পোলা", "বাল", "বালের", 
-    "বালফালাইতে", "বেজন্মা", "পোঁদ", "পোঁদে", "পোঁদমারানি", "পতিতা", "হিজড়া", "লেউড়া", 
-    "লওড়া", "ভোসড়ি", "ভোসড়িকে", "ঝাঁট", "মুঠাল", "ন্যাংটা", "ল্যাংটা", "বেহায়া", "কুলাঙ্গার",
-    "খানকির ঝি", "মাগির ঝি", "বেশ্যার ঝি", "চুদানির ঝি", "চোদানি", "চোদানোর", "গাঁড়ে", 
-    "বাঁড়াতে", "বালের পোলা", "ভাদওয়া", "খবিশ", "নিজন্ম", "শুয়োরমারানি", "কুত্তামারানি",
-    
-    # ইংরেজি গালি (English Profanities)
-    "fuck", "fucker", "fucking", "fucked", "motherfucker", "bitch", "bitches", "bitching", 
-    "asshole", "bastard", "slut", "whore", "cunt", "dick", "dickhead", "pussy", "pussies", 
-    "cock", "cocksucker", "blowjob", "dipshit", "dumbass", "jackass", "prick", "twat", 
-    "wanker", "nigger", "nigga", "faggot", "bullshit", "retard", "scumbag", "douchebag", 
-    "mother fucker", "son of a bitch", "son of bitch", "piece of shit", "stfu", "bullcrap",
-    "dickface", "asswipe", "bastards", "cockhead", "cumshot", "jackshit"
+    "কুত্তা", "কুত্তার বাচ্চা", "কুত্তার পোলা", "কুত্তি", "শালা", "শালি", "ফকিরনি", "ফকিরনির পোলা", 
+    "গুঁদ", "গুঁদমারানি", "বাঁড়া", "বাঁড়ার পোলা", "বাল", "বালের", "বেজন্মা", "পোঁদ", "পোঁদে", 
+    "পতিতা", "হিজড়া", "লেউড়া", "লওড়া", "ভোসড়ি", "ভোসড়িকে", "ঝাঁট", "মুঠাল", "ন্যাংটা", "ল্যাংটা", 
+    "fuck", "fucker", "fucking", "fucked", "motherfucker", "bitch", "bitches", "asshole", 
+    "bastard", "slut", "whore", "cunt", "dick", "dickhead", "pussy", "cock", "cocksucker", 
+    "blowjob", "dipshit", "dumbass", "jackass", "prick", "twat", "wanker", "nigger", "nigga", 
+    "faggot", "bullshit", "retard", "scumbag", "douchebag", "son of a bitch", "stfu"
 }
 
 def scan_text_violation(text: str) -> str:
@@ -171,18 +210,15 @@ def scan_text_violation(text: str) -> str:
         return None
     text_lower = text.lower()
 
-    # ১. ইনবক্স রুল সার্চ
     for phrase in INBOX_KEYWORDS:
         if re.search(r'\b' + re.escape(phrase) + r'\b', text_lower):
             return "ইনবক্সে ডাকা বা DM চাইতে বলা"
 
-    # ২. গালিগালাজ সার্চ
     words = re.findall(r'\b\w+\b', text_lower)
     for word in words:
         if word in BANNED_WORDS:
             return "অশালীন ভাষা / গালিগালাজ ব্যবহার করা"
 
-    # স্পেস/ডট দিয়ে গালি বাইপাস রোধ
     cleaned_text = re.sub(r'[\s._\-@*#]+', '', text_lower)
     for bad in BANNED_WORDS:
         if len(bad) > 3 and bad in cleaned_text:
@@ -197,7 +233,7 @@ async def delete_after_delay(msg, delay=8):
     except Exception:
         pass
 
-# ================= ৪. এডমিন-ইমিউন মডারেশন ইঞ্জিন =================
+# ================= ৫. মডারেশন ইঞ্জিন (এডমিন ইমিউন) =================
 async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     message = update.effective_message
     user = update.effective_user
@@ -206,7 +242,6 @@ async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if not message or not user or chat.type not in ["group", "supergroup"]:
         return False
 
-    # এডমিন বা বট ওনারকে পুরোপুরি ছাড়
     if user.id == ADMIN_ID:
         return False
 
@@ -229,7 +264,7 @@ async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     if violation_reason:
         try:
-            await message.delete()  # মেসেজ সাথে সাথে ডিলিট
+            await message.delete()
             user_warnings[user.id] += 1
 
             if user_warnings[user.id] == 1:
@@ -264,11 +299,11 @@ async def handle_moderation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     return False
 
-# ================= ৫. GEMINI REST API ENGINE (Termux Ready) =================
+# ================= ৬. GEMINI REST API ENGINE =================
 async def ask_gemini_rest(prompt: str) -> str:
     global CURRENT_GEMINI_KEY
     if not CURRENT_GEMINI_KEY:
-        return "⚠️ এডমিন এখনো API Key সেট করেনি! অনুগ্রহ করে এডমিনকে প্রাইভেটে কী সেট করতে বলুন।"
+        return "⚠️ এডমিন এখনো API Key সেট করেনি! অনুগ্রহ করে এডমিনকে ইনবক্সে কী সেট করতে বলুন।"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{WORKING_MODEL}:generateContent?key={CURRENT_GEMINI_KEY}"
     
@@ -288,7 +323,7 @@ async def ask_gemini_rest(prompt: str) -> str:
         else:
             return "🥺 উফ্ সোনা, বুঝতে পারলাম না! আরেকবার বলবে প্লিজ?"
 
-# ================= ৬. RGB লোডিং ও মেসেজ হ্যান্ডলার =================
+# ================= ৭. RGB লোডিং ও স্মার্ট ভয়েস প্রসেসর =================
 RGB_FRAMES = [
     "✨ 🔴 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: প্রজেক্ট আর্কিটেকচার ডিজাইন হচ্ছে...\n[▒▒▒▒▒▒▒▒▒▒] 12% ⚡",
     "⚡ 🟠 𝐙𝐚𝐫𝐚 𝐃𝐞𝐯 𝐄𝐧𝐠𝐢𝐧𝐞: এন্টারপ্রাইজ লজিক ও অ্যালগরিদম তৈরি হচ্ছে...\n[██▒▒▒▒▒▒▒▒] 34% 🔥",
@@ -311,6 +346,30 @@ async def run_rgb_loading_animation(status_msg, stop_event):
         except Exception:
             break
 
+async def send_voice_audio(update: Update, audio_url: str):
+    """ভয়েস অডিও ডাউনলোড করে পাঠানো"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(audio_url)
+            if resp.status_code == 200:
+                voice_bytes = io.BytesIO(resp.content)
+                voice_bytes.name = "voice.mp3"
+                await update.effective_message.reply_voice(voice=voice_bytes)
+    except Exception as e:
+        logging.error(f"Voice Send Error: {e}")
+
+def detect_smart_emoji(text: str) -> str:
+    """অন্যান্য ইমোজি দিলে নিকটস্থ মূল ইমোজির অডিও লিঙ্ক খুঁজে বের করা"""
+    # ১. সরাসরি মূল ৩১টি ইমোজি চেক
+    for emoji_char, url in EMOJI_AUDIO_MAP.items():
+        if emoji_char in text:
+            return url
+    # ২. এক্সটেন্ডেড ক্লাস্টার ইমোজি চেক (যেমন 😂 দিলে 🤣-এর লিঙ্ক রিটার্ন করা)
+    for ext_emoji, target_emoji in EXTENDED_EMOJI_CLUSTER.items():
+        if ext_emoji in text:
+            return EMOJI_AUDIO_MAP.get(target_emoji)
+    return None
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CURRENT_GEMINI_KEY
     if not update.effective_message or not update.effective_message.text:
@@ -320,14 +379,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user_text = update.effective_message.text.strip()
 
-    # এডমিন ইনবক্সে সরাসরি API Key পেস্ট করলে অটো সেট হবে
+    # এডমিন ইনবক্সে সরাসরি API Key পেস্ট করলে সেট হবে
     if chat.type == "private" and user.id == ADMIN_ID:
         if (user_text.startswith("AIza") or len(user_text) >= 35) and not user_text.startswith("/"):
             CURRENT_GEMINI_KEY = user_text
             save_api_key(user_text)
             await update.effective_message.reply_text(
                 "✅ **API Key সফলভাবে সেট করা হয়েছে সোনা!** 💖\n"
-                "🚀 Zara AI এখন ফুল এক্টিভ এবং যেকোনো প্রশ্নের উত্তর ও কোডিং ফাইল দেওয়ার জন্য প্রস্তুত!",
+                "🚀 Zara AI এখন স্মার্ট ইমোশন ও ভয়েস সহ ফুল অ্যাক্টিভ!",
                 parse_mode="Markdown"
             )
             return
@@ -366,10 +425,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
+        # ১. স্মার্ট ইমোশন ও ইমোজি অডিও ডিটেকশন
+        matched_audio_url = detect_smart_emoji(clean_user_prompt)
+
+        # ২. যদি কোনো ইমোজি না থাকে কিন্তু AI কথার ভাবমূর্তি বুঝে ট্যাগ দিয়েছে: [EMOJI: 😭]
+        if not matched_audio_url:
+            emoji_tag_match = re.search(r"\[EMOJI:\s*(.*?)\]", ai_reply)
+            if emoji_tag_match:
+                tag_emoji = emoji_tag_match.group(1).strip()
+                if tag_emoji in EMOJI_AUDIO_MAP:
+                    matched_audio_url = EMOJI_AUDIO_MAP[tag_emoji]
+                elif tag_emoji in EXTENDED_EMOJI_CLUSTER:
+                    matched_audio_url = EMOJI_AUDIO_MAP.get(EXTENDED_EMOJI_CLUSTER[tag_emoji])
+
+        # মেসেজ থেকে এআই ট্যাগ পরিষ্কার করা
+        ai_reply = re.sub(r"\[EMOJI:\s*.*?\]", "", ai_reply).strip()
+
+        # ৩. কোড ব্লক ডিটেকশন
         code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", ai_reply, re.DOTALL)
 
         if code_blocks:
-            # চ্যাটে কোনো বড় কোড যাবে না! শুধু শর্ট নির্দেশনা যাবে
             clean_message = re.sub(r"```(?:\w+)?\n.*?```", "", ai_reply, flags=re.DOTALL).strip()
             if clean_message:
                 await update.effective_message.reply_text(clean_message, parse_mode="Markdown")
@@ -395,7 +470,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode="Markdown"
             )
         else:
+            # টেক্সট মেসেজ পাঠানো
             await update.effective_message.reply_text(ai_reply, parse_mode="Markdown")
+            
+            # ৪. ইমোশন বা ইমোজি ম্যাচ হলে সাথে সাথে ভয়েস নোট পাঠানো
+            if matched_audio_url:
+                await send_voice_audio(update, matched_audio_url)
 
     except Exception as e:
         stop_event.set()
@@ -406,7 +486,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"Zara AI Error: {e}")
         await update.effective_message.reply_text(f"🥺 উফ্ {user_display_name}! একটু সমস্যা হয়েছে... আরেকবার বলবে প্লিজ? 💖")
 
-# ================= ৭. কমান্ডস =================
+# ================= ৮. কমান্ডস =================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_name = user.first_name or "বাবু"
@@ -416,7 +496,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.effective_message.reply_text(
                 f"🔐 **হ্যালো আমার বস {user_name}!** 🥰\n\n"
                 "বট নিরাপদে রান হয়েছে, কিন্তু কোনো Gemini API Key সেট করা নেই!\n"
-                "👉 অনুগ্রহ করে আপনার **Google AI Studio API Key**-টি এখানে মেসেজ হিসেবে পাঠিয়ে দিন।",
+                "👉 অনুগ্রহ করে আপনার **Google AI Studio API Key**-টি এখানে পাঠিয়ে দিন।",
                 parse_mode="Markdown"
             )
             return
@@ -431,7 +511,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     welcome_msg = (
         f"Hey {user_name}! 🥰 আমি **Zara AI (জারা)**!\n\n"
-        "💖 রোমান্টিক আড্ডা দিতে আমি তো আছিই!\n"
+        "💖 রোমান্টিক আড্ডা দিতে আমি সবসময় তোমার সাথে আছি! হাসাহাসি বা কান্নাকাটি করলে কিউট ভয়েসও পাঠাবো! 🎙️✨\n"
         "💻 আর যেকোনো বড় প্রজেক্ট কোডিং চাইলে ছোট করে বুঝিয়ে সম্পূর্ণ ফাইল পাঠিয়ে দেবো! 🔥\n\n"
         "আমাকে গ্রুপে অ্যাড করে **Admin** বানিয়ে দাও সোনা! 😉✨"
     )
@@ -454,9 +534,9 @@ async def setkey_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(msg="Zara Bot Error:", exc_info=context.error)
 
-# ================= ৮. মেইন =================
+# ================= ৯. মেইন =================
 def main():
-    print(f"💖 Zara AI Bot ({WORKING_MODEL}) লাইভ হচ্ছে...")
+    print(f"💖 Zara AI Bot ({WORKING_MODEL}) স্মার্ট ইমোশন ইঞ্জিন সহ লাইভ হচ্ছে...")
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start_command))
